@@ -7,7 +7,7 @@ const Home: React.FC = () => {
       <Page.Content>
         <div className="home-hero">
           <img
-            src="/assets/app-icons/abgFit-192.png"
+            src="/app-icons/abgFit-192.png"
             alt="abgFit logo"
             className="home-logo"
           />
