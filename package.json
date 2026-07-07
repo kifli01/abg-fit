@@ -10,12 +10,12 @@
   },
   "dependencies": {
     "@geist-ui/core": "^2.3.8",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/react": "~18.2.79",
-    "@types/react-dom": "~18.2.25",
+    "@types/react": "18.2.79",
+    "@types/react-dom": "18.2.25",
     "@typescript-eslint/eslint-plugin": "^7.13.0",
     "@typescript-eslint/parser": "^7.13.0",
     "@vitejs/plugin-react": "^4.3.1",

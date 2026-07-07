@@ -26,6 +26,9 @@ const Home: React.FC = () => {
             onClick={() => {
               // Google Sign-In — to be wired in a future iteration
             }}
+            placeholder={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
           >
             Continue with Google
           </Button>
