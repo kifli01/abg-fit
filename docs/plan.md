@@ -2,77 +2,96 @@
 
 ## Vision
 
-abgFit egy edzésterv PWA, amelynek célja, hogy a felhasználók összeválogathatják a saját edzésprogramjaikat egy kiterjedt, kutatott feladatkönyvtárból, majd nyomon követhetik az előrehaladásukat — akár többnapos programokon át is. Az alkalmazás mesterséges intelligenciával is rendelkezik: a felhasználó elmondja, mit szeret, mit csinál, mi fér bele az életébe, és az AI összeállít egy személyre szabott programot — majd iterálni is lehet rajta a chatben.
+abgFit is a workout planning PWA. Users can build their own training programs from a curated, research-backed exercise library, then track their progress across multi-day programs. The app also includes AI: the user describes their goals, preferences, and schedule, and the AI assembles a personalised program — which can then be refined through chat.
 
 ---
 
-## Iterációk
+## Stack
 
-### 1. Alapok — Hello World PWA
-
-Cél: Egy működő, deployolt PWA-alap, ami megfelel a modern elvárásoknak.
-
-- Next.js projekt inicializálás, Vercel deploy
-- PWA konfiguráció: manifest, service worker, installability
-- Alapvető navigáció és layout shell
-- Design system és brand alapok (abgFit vizuális identitás)
-- Sikerkritérium: installálható, bejelentkezés nélkül is megnyitható app, üres de helyes shell
-
-### 2. Firebase integráció
-
-Cél: Felhasználókezelés és adattárolás alapja.
-
-- Firebase Auth: Google / email belépés
-- Firestore adatbázis struktúra megtervezése és felállítása
-- Felhasználói profil alapok
-- Titkos kulcsok kizárólag Vercel environment variables-ben
-- Sikerkritérium: bejelentkezés, kijelentkezés, saját adatok olvasása/írása
-
-### 3. Workout feladatok kutatása és adatbázis feltöltése
-
-Cél: Az app tartalmi alapja — a feladatkönyvtár.
-
-- Izomcsoportok, mozgásminták és kategóriák meghatározása
-- Kiterjedt feladatlista összeállítása (kutatás alapján)
-- Minden feladathoz: név, leírás, izmok, felszerelés, nehézség, videó/kép hivatkozás
-- Feladatok feltöltése Firestore-ba, admin UI vagy script alapján
-- Sikerkritérium: böngészhető, szűrhető feladatkönyvtár az appban
-
-### 4. Manuális workout program készítés
-
-Cél: A felhasználó saját programot tud összerakni és követni.
-
-- Program builder UI: feladatok kiválasztása és sorrendezése
-- Többnapos programstruktúra (pl. 5 napos split)
-- Program követés: aktív edzés nézet, haladás mentése
-- Edzésnapló — hol tartunk épp a programban
-- Sikerkritérium: program létrehozás, elindítás, napi haladás nyomon követése
-
-### 5. AI integráció
-
-Cél: AI backend bekötése, biztonságos architektúra.
-
-- AI provider kiválasztása és integrálása (API kulcs server-side, soha nem kliensben)
-- Chat alapú felület az appban
-- Rendszer prompt kialakítása: abgFit kontextus, feladatkönyvtár ismerete
-- Sikerkritérium: biztonságos AI chat működik az appban, tudja a feladatokat
-
-### 6. AI funkciók
-
-Cél: Személyre szabott programgeneráció és iteráció AI-jal.
-
-- Program generálás chatből: felhasználó elmondja preferenciáit, AI összeállít egy programot
-- Iteráció: meglévő programon módosítás chatben (pl. "cseréld le a guggolást")
-- AI javaslatok mentése és alkalmazása a program builderre
-- Hosszabb távú: AI ismeri a felhasználó előzményeit, edzéslogját
-- Sikerkritérium: teljes körű AI-alapú program létrehozás és szerkesztés
+- **Frontend**: React PWA (Create React App or Vite-based setup)
+- **Hosting**: Vercel
+- **Backend / DB**: Firebase (Auth + Firestore)
+- **AI**: Server-side API integration (provider TBD)
+- No framework (e.g. Next.js) is assumed unless explicitly approved for a given iteration
 
 ---
 
-## Elvek
+## Conventions
 
-- **Iteratív fejlesztés**: minden lépés önmagában is értékes és deployálható állapot
-- **PWA-first**: offline képesség, installálhatóság elsőrendű prioritás
-- **Biztonság**: titkok soha nem kerülnek a repóba, minden érzékeny adat Vercel env vars-ban
-- **Egyszerűség**: a részletek kidolgozása az adott lépés feladata, a terv csapásirányt ad
-- **Minőség**: frontend és UX minőség minden lépésben szempont
+- **Language — implementation**: All code, documentation, UI copy, branch names, commit messages, and PR descriptions must be in **English**
+- **Language — conversation**: Direct conversation with the project owner may be in Hungarian
+- **Naming**: Keep names clear, consistent, and brand-appropriate for abgFit
+- **Secrets**: No secrets, API keys, or credentials in the repository — Vercel environment variables only
+
+---
+
+## Iterations
+
+### 1. Foundation — Hello World PWA
+
+Goal: A working, deployed React PWA shell that meets modern standards.
+
+- React app initialisation, Vercel deploy
+- PWA configuration: manifest, service worker, installability
+- Basic navigation and layout shell
+- Design system and brand foundations (abgFit visual identity)
+- Success criterion: installable, publicly accessible app with an empty but correct shell
+
+### 2. Firebase Integration
+
+Goal: User management and data storage foundation.
+
+- Firebase Auth: Google / email sign-in
+- Firestore data model design and setup
+- Basic user profile
+- All secrets in Vercel environment variables only
+- Success criterion: sign in, sign out, read and write own data
+
+### 3. Exercise Library — Research and Data
+
+Goal: The content foundation of the app.
+
+- Define muscle groups, movement patterns, and categories
+- Compile a broad exercise list (research-based)
+- Each exercise: name, description, muscles, equipment, difficulty, video/image reference
+- Load exercises into Firestore via admin UI or script
+- Success criterion: browsable, filterable exercise library in the app
+
+### 4. Manual Workout Builder
+
+Goal: Users can build and follow their own programs.
+
+- Program builder UI: select and order exercises
+- Multi-day program structure (e.g. 5-day split)
+- Workout tracking: active session view, progress saving
+- Training log — current position within the program
+- Success criterion: create a program, start it, track daily progress
+
+### 5. AI Integration
+
+Goal: Secure AI backend connection.
+
+- Select and integrate an AI provider (API key server-side only, never in the client)
+- Chat interface in the app
+- System prompt: abgFit context, exercise library awareness
+- Success criterion: secure AI chat works in the app and knows the exercise library
+
+### 6. AI Features
+
+Goal: Personalised program generation and iteration via AI.
+
+- Program generation from chat: user describes preferences, AI assembles a program
+- Iteration: modify an existing program through chat (e.g. "swap out squats")
+- Save and apply AI suggestions to the program builder
+- Longer-term: AI aware of the user's history and training log
+- Success criterion: full AI-driven program creation and editing
+
+---
+
+## Principles
+
+- **Iterative**: every iteration delivers a deployable, self-contained increment of value
+- **PWA-first**: offline capability and installability are top priorities
+- **Security**: secrets never go into the repo; all sensitive config lives in Vercel env vars
+- **Simplicity**: details are worked out iteration by iteration; the plan sets direction, not specification
+- **Quality**: frontend and UX quality is a concern at every step
