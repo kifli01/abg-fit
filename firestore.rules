@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------------
+    // Helper: returns true when the requesting user is allowlisted.
+    //
+    // All five conditions must hold:
+    //   1. signed in
+    //   2. owns the target /users/{uid} document
+    //   3. has a non-null email claim
+    //   4. email is verified
+    //   5. verified email exists as a document in /allowlist
+    // ---------------------------------------------------------------------------
+    function isAllowlisted(uid) {
+      return
+        request.auth != null &&
+        request.auth.uid == uid &&
+        request.auth.token.email != null &&
+        request.auth.token.email_verified == true &&
+        exists(/databases/$(database)/documents/allowlist/$(request.auth.token.email));
+    }
+
+    // ---------------------------------------------------------------------------
+    // /users/{uid}
+    //
+    // Read and write are permitted only to the verified, allowlisted owner.
+    // ---------------------------------------------------------------------------
+    match /users/{uid} {
+      allow read, write: if isAllowlisted(uid);
+    }
+
+    // ---------------------------------------------------------------------------
+    // /allowlist/{email}
+    //
+    // The allowlist is managed server-side only (e.g. via Admin SDK or the
+    // Firebase console). No client can read or write to it directly.
+    // ---------------------------------------------------------------------------
+    match /allowlist/{email} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Deny everything else by default.
+    // ---------------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
