@@ -37,39 +37,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/*
- * Orientation stability — CSS fallback layer.
- *
- * When the device is rotated to landscape and the platform cannot lock
- * orientation (iOS Safari, iOS PWA), the hook sets
- * [data-orientation="landscape"] on <html>.
- *
- * We counter-rotate the #root subtree so the portrait layout remains
- * visible and correctly sized, without any blocking overlay or message.
- *
- * This approach:
- * - Is iOS Safari / iOS PWA specific (those are the only environments
- *   that set this attribute AND cannot lock natively).
- * - Does NOT affect Android PWA (orientation lock succeeds there).
- * - Does NOT affect desktop browsers (orientation query never fires).
- * - Adds zero UI elements.
- */
-html[data-orientation="landscape"] #root {
-  /*
-   * Rotate the content back to portrait orientation.
-   * 100vw/100vh swap because after a 90-degree rotation the
-   * viewport axes are exchanged.
-   */
-  transform: rotate(-90deg);
-  transform-origin: left top;
-  width: 100vh;
-  height: 100vw;
-  overflow: hidden;
-  position: absolute;
-  top: 100vw;
-  left: 0;
-}
-
 .home-page {
   min-height: 100vh;
   display: flex;
