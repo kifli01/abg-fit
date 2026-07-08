@@ -17,6 +17,25 @@
 
 import { useEffect } from 'react';
 
+/**
+ * screen.orientation.lock() is not present in TypeScript's lib.dom.d.ts
+ * (it is a newer spec addition). We cast to a local interface to call it
+ * safely while keeping strict mode on for the rest of the codebase.
+ */
+interface ScreenOrientationWithLock extends ScreenOrientation {
+  lock(orientation: OrientationLockType): Promise<void>;
+}
+
+type OrientationLockType =
+  | 'any'
+  | 'natural'
+  | 'landscape'
+  | 'portrait'
+  | 'portrait-primary'
+  | 'portrait-secondary'
+  | 'landscape-primary'
+  | 'landscape-secondary';
+
 /** Returns true when running as an installed PWA in standalone display mode. */
 function isStandalone(): boolean {
   return (
@@ -47,8 +66,9 @@ function isAndroid(): boolean {
  */
 async function attemptOrientationLock(): Promise<void> {
   try {
-    if (screen.orientation && typeof screen.orientation.lock === 'function') {
-      await screen.orientation.lock('portrait');
+    const orientation = screen.orientation as ScreenOrientationWithLock | undefined;
+    if (orientation && typeof orientation.lock === 'function') {
+      await orientation.lock('portrait');
     }
   } catch {
     // Expected on iOS Safari, iOS PWA, and desktop browsers — not an error.
