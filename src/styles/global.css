@@ -1,5 +1,8 @@
 :root {
   color-scheme: dark;
+  /* iOS safe-area top inset (notch / Dynamic Island).
+     Falls back to 0px on non-iOS / non-PWA environments. */
+  --safe-area-top: env(safe-area-inset-top, 0px);
 }
 
 * {
@@ -72,10 +75,13 @@ body {
   top: 0;
   z-index: 100;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.5rem;
-  height: 56px;
-  padding: 0 1rem;
+  /* Total height = visible 56px bar + iOS safe-area top inset.
+     On non-iOS devices --safe-area-top resolves to 0px, so height stays 56px. */
+  height: calc(56px + var(--safe-area-top));
+  padding: 0 1rem calc(0px) 1rem;
+  padding-top: var(--safe-area-top);
   background-color: #111;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   -webkit-user-select: none;
@@ -87,6 +93,8 @@ body {
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+  /* Keep content vertically centred in the 56px visible bar area */
+  height: 56px;
 }
 
 .app-header__logo {
@@ -112,6 +120,11 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Keep content vertically centred in the 56px visible bar area */
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .app-header__menu-btn {
@@ -127,6 +140,8 @@ body {
   color: rgba(255, 255, 255, 0.75);
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease;
+  /* Keep button vertically centred in the 56px visible bar area */
+  margin-bottom: 8px;
 }
 
 .app-header__menu-btn:hover {
@@ -180,10 +195,11 @@ body {
 
 .app-drawer__header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  height: 56px;
-  padding: 0 1rem;
+  /* Match the app-header height so the drawer header lines up visually */
+  height: calc(56px + var(--safe-area-top));
+  padding: var(--safe-area-top) 1rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
@@ -192,6 +208,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  height: 56px;
 }
 
 .app-drawer__logo {
@@ -220,6 +237,7 @@ body {
   color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease;
+  margin-bottom: 10px;
 }
 
 .app-drawer__close-btn:hover {
