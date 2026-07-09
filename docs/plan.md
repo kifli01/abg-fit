@@ -51,11 +51,22 @@ Goal: User management and data storage foundation.
 
 Goal: The content foundation of the app.
 
-- Define muscle groups, movement patterns, and categories
-- Compile a broad exercise list (research-based)
-- Each exercise: name, description, muscles, equipment, difficulty, video/image reference
-- Load exercises into Firestore via admin UI or script
-- Success criterion: browsable, filterable exercise library in the app
+**Approach — canonical static dataset:**
+
+- A curated, research-backed exercise dataset is stored as a canonical JSON file inside the repository (`src/data/exercises/abgfit-exercises.canonical.json`)
+- This file is the single source of truth for exercise master data — versioned alongside the app code
+- TypeScript types and helper functions (`src/data/exercises/`) provide typed access to the catalog
+- The dataset is imported directly via Vite's native JSON import — no runtime fetch, no separate build step
+- The same source is used for both the app UX (listing, filtering, search) and later AI features (prompt preparation, context injection)
+- Firestore is intentionally **not** used for exercise master data at this stage; it may be introduced later only if admin editing or dynamic update workflows justify it
+- Images and media are out of scope for now
+
+**Remaining work for this iteration:**
+
+- Exercise listing and filtering UI — browsable, searchable exercise library in the app
+- Each exercise: name, muscles, equipment, difficulty displayed in the UI
+
+- Success criterion: browsable, filterable exercise library in the app backed by the canonical dataset
 
 ### 4. Manual Workout Builder
 
