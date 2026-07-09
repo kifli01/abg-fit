@@ -43,6 +43,7 @@ const ExerciseLibrary: React.FC = () => {
           width="100%"
           clearable
           aria-label="Search exercises"
+          crossOrigin={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
         />
