@@ -8,25 +8,27 @@
   padding: 0;
 }
 
+/*
+ * html / body: allow scrolling inside the authenticated app shell.
+ * The previous overflow:hidden prevented the Exercise Library list
+ * and any future scrollable content from working correctly.
+ * We keep overscroll-behavior:none to suppress pull-to-refresh bounce.
+ */
 html,
 body {
-  /* Prevent all scrolling and bounce effects */
-  overflow: hidden;
   overscroll-behavior: none;
-  /* Prevent zoom via touch gestures */
   touch-action: pan-x pan-y;
-  /* Prevent text selection (accidental long-press) */
   -webkit-user-select: none;
   user-select: none;
-  /* Fill the screen exactly */
   width: 100%;
   height: 100%;
 }
 
 #root {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 body {
@@ -37,8 +39,626 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ----------------------------------------
+   App loading (before router resolves)
+   ---------------------------------------- */
+.app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+}
+
+/* ----------------------------------------
+   Authenticated App Shell
+   ---------------------------------------- */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.app-shell__content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ----------------------------------------
+   App Header
+   ---------------------------------------- */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 56px;
+  padding: 0 1rem;
+  background-color: #111;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.app-header__logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.app-header__brand-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.app-header__page-title {
+  flex: 1;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header__menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.app-header__menu-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.app-header__menu-btn:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ----------------------------------------
+   App Drawer (slide-out navigation)
+   ---------------------------------------- */
+
+.app-drawer__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.app-drawer__backdrop--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.app-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 210;
+  width: 280px;
+  max-width: 85vw;
+  background: #111;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.app-drawer--open {
+  transform: translateX(0);
+}
+
+.app-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.app-drawer__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-drawer__logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  object-fit: contain;
+}
+
+.app-drawer__brand-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.app-drawer__close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.app-drawer__close-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.app-drawer__user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.app-drawer__avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.app-drawer__user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-drawer__user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-drawer__user-email {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-drawer__nav {
+  flex: 1;
+  list-style: none;
+  padding: 0.5rem 0;
+  overflow-y: auto;
+  /* Prevent any child from causing horizontal scroll */
+  overflow-x: hidden;
+}
+
+/* Remove any browser-default list item indent/marker */
+.app-drawer__nav li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Constrain to the nav width so the button never overflows */
+  width: 100%;
+  overflow: hidden;
+}
+
+ul.app-drawer__nav {
+  margin: 0;
+}
+
+.app-drawer__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 140ms ease, color 140ms ease;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent the button itself from overflowing */
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-drawer__nav-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.app-drawer__nav-item:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.app-drawer__nav-item--active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.app-drawer__nav-item--upcoming {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.app-drawer__nav-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: inherit;
+}
+
+.app-drawer__nav-label {
+  flex: 1;
+  /* Allow label to shrink so it never pushes the badge out of bounds */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-drawer__nav-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.app-drawer__footer {
+  padding: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.app-drawer__signout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+  text-align: left;
+}
+
+.app-drawer__signout-btn:hover {
+  background: rgba(255, 80, 80, 0.1);
+  color: #f97066;
+}
+
+.app-drawer__signout-btn:active {
+  background: rgba(255, 80, 80, 0.15);
+}
+
+/* ----------------------------------------
+   Exercise Library page
+   ---------------------------------------- */
+.exercise-library {
+  padding: 1.5rem 1rem 2rem;
+  max-width: 720px;
+  margin: 0 auto;
+  width: auto;
+}
+
+.exercise-library__header {
+  margin-bottom: 1.25rem;
+}
+
+.exercise-library__title {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.25rem !important;
+}
+
+.exercise-library__subtitle {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0 !important;
+}
+
+.exercise-library__search {
+  margin-bottom: 0.25rem;
+}
+
+.exercise-library__count {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
+  display: block;
+}
+
+/* ----------------------------------------
+   Exercise cards stack
+   ---------------------------------------- */
+.exercise-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.exercise-card {
+  width: 100%;
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 160ms ease;
+}
+
+.exercise-card--expanded {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.exercise-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  transition: background 140ms ease;
+  min-height: 64px;
+}
+
+.exercise-card__header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.exercise-card__header:active {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.exercise-card__thumb {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.exercise-card__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.exercise-card__name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.exercise-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.exercise-card__tag {
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.exercise-card__level {
+  font-size: 0.6875rem;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.exercise-card__level--beginner {
+  color: #50e3a4;
+  background: rgba(80, 227, 164, 0.12);
+}
+
+.exercise-card__level--intermediate {
+  color: #f7c948;
+  background: rgba(247, 201, 72, 0.12);
+}
+
+.exercise-card__level--expert {
+  color: #f97066;
+  background: rgba(249, 112, 102, 0.12);
+}
+
+.exercise-card__chevron {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), color 160ms ease;
+}
+
+.exercise-card__chevron--open {
+  transform: rotate(180deg);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.exercise-card__body {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.875rem 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.exercise-card__detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.exercise-card__detail-row {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.exercise-card__detail-label {
+  flex-shrink: 0;
+  width: 120px;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 500;
+}
+
+.exercise-card__detail-value {
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: capitalize;
+}
+
+.exercise-card__instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.exercise-card__instructions-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.exercise-card__instructions-list {
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.exercise-card__instructions-list li {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+}
+
+.exercise-card__instructions-more {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.25);
+  padding-left: 1.1rem;
+}
+
+/* ----------------------------------------
+   Empty state and footer notes
+   ---------------------------------------- */
+.exercise-library__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.exercise-library__empty-icon {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.exercise-library__empty-text {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.35);
+  margin: 0 !important;
+}
+
+.exercise-library__more {
+  display: block;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  text-align: center;
+}
+
+/* ----------------------------------------
+   Signed-out Home / Login screen
+   ---------------------------------------- */
 .home-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -53,7 +673,7 @@ body {
   padding: 2rem 1rem;
   max-width: 400px;
   margin: 0 auto;
-  min-height: 80vh;
+  min-height: 80dvh;
 }
 
 .home-logo {
@@ -75,21 +695,14 @@ body {
   margin-top: 0.25rem;
 }
 
-.home-welcome {
-  font-size: 1rem;
-  color: #ccc;
-  margin-top: 0.25rem;
-}
-
-.home-auth-status {
-  font-size: 0.875rem;
-  color: #50e3a4;
-  margin-top: 0.25rem;
-}
-
 .home-auth-error {
   font-size: 0.875rem;
   color: #f97066;
   max-width: 300px;
   text-align: center;
+}
+
+ul li::before {
+  content: '' !important;
+  margin-left: 0 !important;
 }
