@@ -286,7 +286,7 @@ body {
   overflow: hidden;
 }
 
-.app-drawer__nav ul {
+ul.app-drawer__nav {
   margin: 0;
 }
 
@@ -703,6 +703,6 @@ body {
 }
 
 ul li::before {
-  content: '';
-  margin-left: 0;
+  content: '' !important;
+  margin-left: 0 !important;
 }
