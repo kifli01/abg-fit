@@ -36,8 +36,12 @@ interface AppDrawerProps {
 
 /**
  * Slide-out navigation drawer for authenticated users.
- * Uses a custom overlay + panel pattern compatible with Geist dark theme.
- * Contains nav links and a sign-out action.
+ *
+ * Header structure mirrors AppHeader:
+ *   <div.app-drawer__header>        — outer container; holds safe-area top padding only
+ *     <div.app-drawer__header-bar>  — visible 56 px bar row; children centred vertically
+ *
+ * Safe-area compensation is applied once, at the outer container level via CSS.
  */
 const AppDrawer: React.FC<AppDrawerProps> = ({ open, onClose }) => {
   const { signOut, user } = useAuth();
@@ -70,24 +74,26 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ open, onClose }) => {
         aria-label="Main navigation"
         role="navigation"
       >
-        {/* Header row */}
+        {/* Header: outer container takes safe-area padding; inner bar row is always 56 px */}
         <div className="app-drawer__header">
-          <div className="app-drawer__brand">
-            <img
-              src="/app-icons/abgFit-192.png"
-              alt="abgFit"
-              className="app-drawer__logo"
-            />
-            <span className="app-drawer__brand-name">abgFit</span>
+          <div className="app-drawer__header-bar">
+            <div className="app-drawer__brand">
+              <img
+                src="/app-icons/abgFit-192.png"
+                alt="abgFit"
+                className="app-drawer__logo"
+              />
+              <span className="app-drawer__brand-name">abgFit</span>
+            </div>
+            <button
+              className="app-drawer__close-btn"
+              onClick={onClose}
+              aria-label="Close navigation menu"
+              type="button"
+            >
+              <CloseIcon />
+            </button>
           </div>
-          <button
-            className="app-drawer__close-btn"
-            onClick={onClose}
-            aria-label="Close navigation menu"
-            type="button"
-          >
-            <CloseIcon />
-          </button>
         </div>
 
         {/* User info */}
