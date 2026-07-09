@@ -286,6 +286,10 @@ body {
   overflow: hidden;
 }
 
+.app-drawer__nav ul {
+  margin: 0;
+}
+
 .app-drawer__nav-item {
   display: flex;
   align-items: center;
@@ -394,7 +398,7 @@ body {
   padding: 1.5rem 1rem 2rem;
   max-width: 720px;
   margin: 0 auto;
-  width: 100%;
+  width: auto;
 }
 
 .exercise-library__header {
@@ -696,4 +700,9 @@ body {
   color: #f97066;
   max-width: 300px;
   text-align: center;
+}
+
+ul li::before {
+  content: '';
+  margin-left: 0;
 }
