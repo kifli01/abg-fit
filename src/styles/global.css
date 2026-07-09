@@ -272,6 +272,18 @@ body {
   list-style: none;
   padding: 0.5rem 0;
   overflow-y: auto;
+  /* Prevent any child from causing horizontal scroll */
+  overflow-x: hidden;
+}
+
+/* Remove any browser-default list item indent/marker */
+.app-drawer__nav li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Constrain to the nav width so the button never overflows */
+  width: 100%;
+  overflow: hidden;
 }
 
 .app-drawer__nav-item {
@@ -291,6 +303,9 @@ body {
   transition: background 140ms ease, color 140ms ease;
   -webkit-user-select: none;
   user-select: none;
+  /* Prevent the button itself from overflowing */
+  min-width: 0;
+  overflow: hidden;
 }
 
 .app-drawer__nav-item:hover:not(:disabled) {
@@ -321,6 +336,11 @@ body {
 
 .app-drawer__nav-label {
   flex: 1;
+  /* Allow label to shrink so it never pushes the badge out of bounds */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-drawer__nav-badge {
