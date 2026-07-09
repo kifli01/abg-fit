@@ -17,9 +17,14 @@ interface AppHeaderProps {
 
 /**
  * Compact mobile-first authenticated header.
- * Left: abgFit logo mark + brand name.
- * Center: current page title.
- * Right: hamburger button to open the navigation drawer.
+ *
+ * Structure:
+ *   <header.app-header>          — sticky outer container; holds safe-area top padding only
+ *     <div.app-header__bar>      — visible 56 px bar row; children centred vertically
+ *       brand | page title | menu button
+ *
+ * Safe-area compensation is applied once, at the outer container level via CSS.
+ * The inner bar row height is always 56 px regardless of device / inset.
  */
 const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
   const { pathname } = useLocation();
@@ -27,28 +32,30 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
 
   return (
     <header className="app-header">
-      {/* Brand */}
-      <div className="app-header__brand">
-        <img
-          src="/app-icons/abgFit-192.png"
-          alt="abgFit"
-          className="app-header__logo"
-        />
-        <span className="app-header__brand-name">abgFit</span>
+      <div className="app-header__bar">
+        {/* Brand */}
+        <div className="app-header__brand">
+          <img
+            src="/app-icons/abgFit-192.png"
+            alt="abgFit"
+            className="app-header__logo"
+          />
+          <span className="app-header__brand-name">abgFit</span>
+        </div>
+
+        {/* Current page title */}
+        <span className="app-header__page-title">{pageTitle}</span>
+
+        {/* Hamburger */}
+        <button
+          className="app-header__menu-btn"
+          onClick={onMenuClick}
+          aria-label="Open navigation menu"
+          type="button"
+        >
+          <HamburgerIcon />
+        </button>
       </div>
-
-      {/* Current page title */}
-      <span className="app-header__page-title">{pageTitle}</span>
-
-      {/* Hamburger */}
-      <button
-        className="app-header__menu-btn"
-        onClick={onMenuClick}
-        aria-label="Open navigation menu"
-        type="button"
-      >
-        <HamburgerIcon />
-      </button>
     </header>
   );
 };
