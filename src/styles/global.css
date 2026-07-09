@@ -69,18 +69,20 @@ body {
 
 /* ----------------------------------------
    App Header
+   ----------------------------------------
+   Standard iOS PWA safe-area pattern:
+     - The outer sticky container holds safe-area padding at the top.
+       This is the only place safe-area compensation is applied.
+     - The inner bar row (.app-header__bar) is the visible 56 px chrome.
+       Its height never changes; it is not inflated by the inset.
+     - On non-iOS devices --safe-area-top resolves to 0 px so the outer
+       container adds no extra space at all.
    ---------------------------------------- */
 .app-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  /* Total height = visible 56px bar + iOS safe-area top inset.
-     On non-iOS devices --safe-area-top resolves to 0px, so height stays 56px. */
-  height: calc(56px + var(--safe-area-top));
-  padding: 0 1rem calc(0px) 1rem;
+  /* Safe-area compensation lives here and only here. */
   padding-top: var(--safe-area-top);
   background-color: #111;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -88,13 +90,20 @@ body {
   user-select: none;
 }
 
+/* The visible bar row: always 56 px, children centred vertically. */
+.app-header__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 56px;
+  padding: 0 1rem;
+}
+
 .app-header__brand {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
-  /* Keep content vertically centred in the 56px visible bar area */
-  height: 56px;
 }
 
 .app-header__logo {
@@ -120,11 +129,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  /* Keep content vertically centred in the 56px visible bar area */
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .app-header__menu-btn {
@@ -140,8 +144,6 @@ body {
   color: rgba(255, 255, 255, 0.75);
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease;
-  /* Keep button vertically centred in the 56px visible bar area */
-  margin-bottom: 8px;
 }
 
 .app-header__menu-btn:hover {
@@ -155,6 +157,10 @@ body {
 
 /* ----------------------------------------
    App Drawer (slide-out navigation)
+   ----------------------------------------
+   Same standard pattern as the app header:
+     - .app-drawer__header outer container takes safe-area padding at top.
+     - .app-drawer__header-bar inner row is always 56 px with centred items.
    ---------------------------------------- */
 
 .app-drawer__backdrop {
@@ -194,21 +200,25 @@ body {
 }
 
 .app-drawer__header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  /* Match the app-header height so the drawer header lines up visually */
-  height: calc(56px + var(--safe-area-top));
-  padding: var(--safe-area-top) 1rem 0;
+  /* Safe-area compensation lives here and only here for the drawer. */
+  padding-top: var(--safe-area-top);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
+}
+
+/* The visible drawer header bar row: always 56 px, children centred. */
+.app-drawer__header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 1rem;
 }
 
 .app-drawer__brand {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  height: 56px;
 }
 
 .app-drawer__logo {
@@ -237,7 +247,6 @@ body {
   color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
   transition: background 150ms ease, color 150ms ease;
-  margin-bottom: 10px;
 }
 
 .app-drawer__close-btn:hover {
