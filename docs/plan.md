@@ -68,13 +68,13 @@ Goal: The content foundation of the app.
 
 - Success criterion: browsable, filterable exercise library in the app backed by the canonical dataset
 
-### 4. UI cleanup
+### 4. ✅ UI cleanup
 
 Remove all visible `abgFit` text from the user-facing interface.
 
 This change is presentation-only. It should not change routing, authentication, or feature behavior.
 
-### 5. Exercise data migration
+### 5. ✅ Exercise data migration
 
 Move `abgfit-exercises.canonical.json` from static runtime usage into Firebase Firestore.
 
