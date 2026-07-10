@@ -40,6 +40,17 @@ service cloud.firestore {
       allow read, write: if isOwner(uid) && isAllowedEmail();
     }
 
+    // ---------------------------------------------------------------------------
+    // /exercises/{exerciseId}
+    //
+    // Public read: the exercise catalog is read-only reference data for all users.
+    // Write restricted to allowed accounts (admin import tool).
+    // ---------------------------------------------------------------------------
+    match /exercises/{exerciseId} {
+      allow read: if true;
+      allow write: if isAllowedEmail();
+    }
+
     // Deny everything else by default.
     match /{document=**} {
       allow read, write: if false;

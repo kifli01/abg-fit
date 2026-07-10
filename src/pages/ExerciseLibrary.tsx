@@ -1,32 +1,42 @@
-import React, { useState, useMemo } from 'react';
-import { Text, Input, Spacer } from '@geist-ui/core';
-import { searchExercises } from '../data/exercises';
+import React, { useState } from 'react';
+import { Text, Input, Spacer, Loading } from '@geist-ui/core';
+import { useExercises } from '../hooks/useExercises';
 import type { Exercise } from '../data/exercises';
 
 /**
- * Exercise Library page — Iteration 3 refined scaffold.
+ * Exercise Library page.
  *
+ * Loads exercises from Firestore via useExercises hook.
  * Renders exercise results as full-width expandable cards.
- * Each card has:
- *   - A square image placeholder on the left
- *   - Exercise name + compact metadata in the middle
- *   - An expand/collapse chevron on the right
- * Expanded content shows category, equipment, level, muscles, and instructions preview.
- *
- * Media fetching and final polished detail experience are deferred.
  */
 const ExerciseLibrary: React.FC = () => {
-  const [query, setQuery] = useState('');
+  const { exercises, isLoading, error, search, query } = useExercises();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const results: Exercise[] = useMemo(
-    () => searchExercises(query),
-    [query]
-  );
 
   function toggleCard(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
+
+  if (isLoading) {
+    return (
+      <div className="exercise-library exercise-library--loading">
+        <Loading>Loading exercises…</Loading>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="exercise-library exercise-library--error">
+        <ErrorIcon />
+        <Text p className="exercise-library__error-text">
+          {error}
+        </Text>
+      </div>
+    );
+  }
+
+  const results = exercises;
 
   return (
     <div className="exercise-library">
@@ -36,7 +46,7 @@ const ExerciseLibrary: React.FC = () => {
           Exercise Library
         </Text>
         <Text p className="exercise-library__subtitle">
-          Browse and search the full abgFit exercise catalog.
+          Browse and search the full exercise catalog.
         </Text>
       </div>
 
@@ -45,7 +55,7 @@ const ExerciseLibrary: React.FC = () => {
         <Input
           placeholder="Search exercises…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => search(e.target.value)}
           width="100%"
           clearable
           aria-label="Search exercises"
@@ -298,6 +308,23 @@ function EmptyIcon() {
         strokeWidth="2"
         strokeLinecap="round"
       />
+    </svg>
+  );
+}
+
+function ErrorIcon() {
+  return (
+    <svg
+      width="48"
+      height="48"
+      viewBox="0 0 48 48"
+      fill="none"
+      aria-hidden="true"
+      className="exercise-library__error-icon"
+    >
+      <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" />
+      <line x1="24" y1="14" x2="24" y2="26" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="24" cy="33" r="1.5" fill="currentColor" />
     </svg>
   );
 }

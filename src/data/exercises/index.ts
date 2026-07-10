@@ -1,43 +1,22 @@
-import type { Exercise } from './types';
-import rawCatalog from './abgfit-exercises.canonical.json';
+/**
+ * Exercise data layer for abgFit.
+ *
+ * Runtime source: Firestore (`exercises` collection)
+ * Seed source:    abgfit-exercises.canonical.json (import/admin use only)
+ *
+ * The canonical JSON is no longer the active runtime source.
+ * It is kept in the repository as the seed/import reference for the
+ * admin exercise import flow.
+ */
+
+export { getExercisesFromFirestore as getExercises } from './firestore';
+export { getExerciseByIdFromFirestore as getExerciseById } from './firestore';
+export { searchExercisesFromFirestore as searchExercises } from './firestore';
+export { canonicalToFirestoreDoc } from './transform';
+export type { Exercise, CanonicalExercise, ExerciseImage } from './types';
 
 /**
- * The full canonical exercise catalog.
- * This is the single source of truth for exercise master data in abgFit.
+ * Seed catalog — for admin import use only.
+ * This import must NOT be used in any runtime feature code path.
  */
-export const exercises: Exercise[] = rawCatalog as Exercise[];
-
-/**
- * Returns all exercises in the catalog.
- */
-export function getExercises(): Exercise[] {
-  return exercises;
-}
-
-/**
- * Finds an exercise by its unique id.
- */
-export function getExerciseById(id: string): Exercise | undefined {
-  return exercises.find((e) => e.id === id);
-}
-
-/**
- * Finds an exercise by its URL-friendly slug.
- */
-export function getExerciseBySlug(slug: string): Exercise | undefined {
-  return exercises.find((e) => e.slug === slug);
-}
-
-/**
- * Searches exercises by a free-text query against the searchTerms field.
- * The comparison is case-insensitive.
- */
-export function searchExercises(query: string): Exercise[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return exercises;
-  return exercises.filter((e) =>
-    e.searchTerms.some((term) => term.toLowerCase().includes(q))
-  );
-}
-
-export type { Exercise } from './types';
+export { default as canonicalExerciseSeed } from './abgfit-exercises.canonical.json';
