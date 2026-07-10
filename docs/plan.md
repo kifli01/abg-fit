@@ -27,7 +27,7 @@ abgFit is a workout planning PWA. Users can build their own training programs fr
 
 ## Iterations
 
-### 1. Foundation — Hello World PWA
+### 1. ✅ Foundation — Hello World PWA
 
 Goal: A working, deployed React PWA shell that meets modern standards.
 
@@ -37,7 +37,7 @@ Goal: A working, deployed React PWA shell that meets modern standards.
 - Design system and brand foundations (abgFit visual identity)
 - Success criterion: installable, publicly accessible app with an empty but correct shell
 
-### 2. Firebase Integration
+### 2. ✅ Firebase Integration
 
 Goal: User management and data storage foundation.
 
@@ -47,7 +47,7 @@ Goal: User management and data storage foundation.
 - All secrets in Vercel environment variables only
 - Success criterion: sign in, sign out, read and write own data
 
-### 3. Exercise Library — Research and Data
+### 3. ✅ Exercise Library — Research and Data
 
 Goal: The content foundation of the app.
 
@@ -68,7 +68,37 @@ Goal: The content foundation of the app.
 
 - Success criterion: browsable, filterable exercise library in the app backed by the canonical dataset
 
-### 4. Manual Workout Builder
+### 4. UI cleanup
+
+Remove all visible `abgFit` text from the user-facing interface.
+
+This change is presentation-only. It should not change routing, authentication, or feature behavior.
+
+### 5. Exercise data migration
+
+Move `abgfit-exercises.canonical.json` from static runtime usage into Firebase Firestore.
+
+The JSON file should become a seed/import source only. The application should load exercises from Firestore so exercise fields can be updated later without changing the codebase.
+
+### 6. Image prompt action
+
+Add an admin-only `Img Prompt` button to the expanded exercise card.
+
+The button should generate and copy an English prompt based on the exercise name and description. The generated prompt should instruct an external image AI tool to create a square 1:1 exercise image suitable for a workout application.
+
+### 7. Exercise image upload
+
+Add an admin-only `Upload Image` / `Change Image` action to the expanded exercise card.
+
+Uploaded exercise images should be stored in Vercel Blob public storage. Related metadata should be stored on the corresponding Firestore exercise document, including:
+
+- `imageUrl`
+- `imagePath`
+- `imageUpdatedAt`
+
+The application should load and render the stored exercise image from this persisted data source.
+
+### 8. Manual Workout Builder
 
 Goal: Users can build and follow their own programs.
 
@@ -78,7 +108,7 @@ Goal: Users can build and follow their own programs.
 - Training log — current position within the program
 - Success criterion: create a program, start it, track daily progress
 
-### 5. AI Integration
+### 9. AI Integration
 
 Goal: Secure AI backend connection.
 
@@ -87,7 +117,7 @@ Goal: Secure AI backend connection.
 - System prompt: abgFit context, exercise library awareness
 - Success criterion: secure AI chat works in the app and knows the exercise library
 
-### 6. AI Features
+### 10. AI Features
 
 Goal: Personalised program generation and iteration via AI.
 
