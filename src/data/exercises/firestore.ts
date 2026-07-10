@@ -5,9 +5,10 @@ import {
   getDocs,
   query,
   orderBy,
+  updateDoc,
 } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import type { Exercise } from './types';
+import type { Exercise, ExerciseImage } from './types';
 
 const EXERCISES_COLLECTION = 'exercises';
 
@@ -48,4 +49,16 @@ export async function searchExercisesFromFirestore(
   return all.filter((e) =>
     e.searchTerms.some((term) => term.toLowerCase().includes(q))
   );
+}
+
+/**
+ * Updates the image metadata on a Firestore exercise document.
+ * Called after a successful Vercel Blob upload.
+ */
+export async function updateExerciseImageInFirestore(
+  exerciseId: string,
+  image: ExerciseImage
+): Promise<void> {
+  const ref = doc(db, EXERCISES_COLLECTION, exerciseId);
+  await updateDoc(ref, { image });
 }

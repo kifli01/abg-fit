@@ -501,16 +501,26 @@ ul.app-drawer__nav {
   background: rgba(255, 255, 255, 0.07);
 }
 
+/* Thumbnail: always 64x64 display, image fills it with cover crop */
 .exercise-card__thumb {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
   color: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+.exercise-card__thumb-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
 }
 
 .exercise-card__info {
@@ -591,6 +601,92 @@ ul.app-drawer__nav {
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
+}
+
+/* Full-width original image at the top of the expanded card */
+.exercise-card__image-full {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.exercise-card__image-full-img {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  /* Do not upscale below natural size */
+  max-height: none;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+}
+
+/* Admin image upload section */
+.exercise-card__image-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.exercise-card__image-upload-input {
+  /* Visually hidden; triggered by the styled button */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.exercise-card__image-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+  align-self: flex-start;
+}
+
+.exercise-card__image-upload-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.exercise-card__image-upload-btn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.exercise-card__image-upload-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Spinner dot animation for upload loading state */
+.exercise-card__image-upload-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  animation: exercise-upload-spin 0.6s linear infinite;
+}
+
+@keyframes exercise-upload-spin {
+  to { transform: rotate(360deg); }
+}
+
+.exercise-card__image-upload-error {
+  font-size: 0.75rem;
+  color: #f97066;
 }
 
 .exercise-card__detail-grid {

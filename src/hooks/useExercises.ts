@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getExercises } from '../data/exercises';
-import type { Exercise } from '../data/exercises';
+import type { Exercise, ExerciseImage } from '../data/exercises';
 
 interface UseExercisesResult {
   exercises: Exercise[];
@@ -8,10 +8,13 @@ interface UseExercisesResult {
   error: string | null;
   search: (query: string) => void;
   query: string;
+  updateLocalExerciseImage: (exerciseId: string, image: ExerciseImage) => void;
 }
 
 /**
  * Loads exercises from Firestore and provides a client-side search interface.
+ * Also exposes updateLocalExerciseImage to optimistically update card state
+ * immediately after an image upload without re-fetching Firestore.
  */
 export function useExercises(): UseExercisesResult {
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
@@ -62,5 +65,19 @@ export function useExercises(): UseExercisesResult {
     [allExercises]
   );
 
-  return { exercises, isLoading, error, search, query };
+  /**
+   * Optimistically patches the in-memory exercise list with new image metadata
+   * after a successful upload — no Firestore re-fetch required.
+   */
+  const updateLocalExerciseImage = useCallback(
+    (exerciseId: string, image: ExerciseImage) => {
+      const patch = (list: Exercise[]): Exercise[] =>
+        list.map((e) => (e.id === exerciseId ? { ...e, image } : e));
+      setAllExercises((prev) => patch(prev));
+      setExercises((prev) => patch(prev));
+    },
+    []
+  );
+
+  return { exercises, isLoading, error, search, query, updateLocalExerciseImage };
 }

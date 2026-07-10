@@ -37,12 +37,16 @@ export interface CanonicalExercise {
 
 /**
  * Image metadata stored on a Firestore exercise document.
- * Initially null; populated after iteration 7 (exercise image upload).
+ * Populated after exercise image upload (iteration 7).
+ * imageUrl / imagePath refer to the original uploaded file.
+ * imageThumbUrl / imageThumbPath refer to the 128x128 center-cropped thumbnail.
  */
 export interface ExerciseImage {
-  url: string;
-  path: string;
-  updatedAt: string;
+  imageUrl: string;
+  imagePath: string;
+  imageUpdatedAt: string;
+  imageThumbUrl?: string;
+  imageThumbPath?: string;
 }
 
 /**

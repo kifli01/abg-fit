@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Text, Input, Spacer, Loading } from '@geist-ui/core';
 import { useExercises } from '../hooks/useExercises';
-import type { Exercise } from '../data/exercises';
+import { updateExerciseImage } from '../data/exercises';
+import type { Exercise, ExerciseImage } from '../data/exercises';
+import { useAuth } from '../features/auth/useAuth';
 
 /**
  * Exercise Library page.
@@ -10,8 +12,10 @@ import type { Exercise } from '../data/exercises';
  * Renders exercise results as full-width expandable cards.
  */
 const ExerciseLibrary: React.FC = () => {
-  const { exercises, isLoading, error, search, query } = useExercises();
+  const { exercises, isLoading, error, search, query, updateLocalExerciseImage } =
+    useExercises();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { isAdmin } = useAuth();
 
   function toggleCard(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -89,7 +93,11 @@ const ExerciseLibrary: React.FC = () => {
                 key={exercise.id}
                 exercise={exercise}
                 isExpanded={expandedId === exercise.id}
+                isAdmin={isAdmin}
                 onToggle={() => toggleCard(exercise.id)}
+                onImageUploaded={(image) =>
+                  updateLocalExerciseImage(exercise.id, image)
+                }
               />
             ))}
           </div>
@@ -112,15 +120,20 @@ const ExerciseLibrary: React.FC = () => {
 interface ExerciseCardProps {
   exercise: Exercise;
   isExpanded: boolean;
+  isAdmin: boolean;
   onToggle: () => void;
+  onImageUploaded: (image: ExerciseImage) => void;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exercise,
   isExpanded,
+  isAdmin,
   onToggle,
+  onImageUploaded,
 }) => {
   const instructionPreview = exercise.instructions.slice(0, 3);
+  const thumbUrl = exercise.image?.imageThumbUrl ?? exercise.image?.imageUrl ?? null;
 
   return (
     <div
@@ -138,9 +151,19 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           isExpanded ? 'Collapse' : 'Expand'
         } details for ${exercise.name}`}
       >
-        {/* Left: image placeholder */}
+        {/* Left: thumbnail or placeholder */}
         <div className="exercise-card__thumb" aria-hidden="true">
-          <ImagePlaceholderIcon />
+          {thumbUrl ? (
+            <img
+              src={thumbUrl}
+              alt=""
+              className="exercise-card__thumb-img"
+              width={64}
+              height={64}
+            />
+          ) : (
+            <ImagePlaceholderIcon />
+          )}
         </div>
 
         {/* Middle: name + meta */}
@@ -175,6 +198,25 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       {/* Expanded detail area */}
       {isExpanded && (
         <div className="exercise-card__body">
+          {/* Full-width original image at the top of the expanded section */}
+          {exercise.image?.imageUrl && (
+            <div className="exercise-card__image-full">
+              <img
+                src={exercise.image.imageUrl}
+                alt={`${exercise.name} exercise`}
+                className="exercise-card__image-full-img"
+              />
+            </div>
+          )}
+
+          {/* Admin: upload / change image */}
+          {isAdmin && (
+            <ExerciseImageUploader
+              exercise={exercise}
+              onUploaded={onImageUploaded}
+            />
+          )}
+
           <div className="exercise-card__detail-grid">
             <DetailRow label="Category" value={exercise.category} />
             {exercise.equipment && (
@@ -219,6 +261,125 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             </div>
           )}
         </div>
+      )}
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// ExerciseImageUploader (admin only)
+// ---------------------------------------------------------------------------
+
+interface ExerciseImageUploaderProps {
+  exercise: Exercise;
+  onUploaded: (image: ExerciseImage) => void;
+}
+
+const ExerciseImageUploader: React.FC<ExerciseImageUploaderProps> = ({
+  exercise,
+  onUploaded,
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const hasImage = !!exercise.image?.imageUrl;
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      setUploadError('Only jpeg, png, and webp images are supported.');
+      return;
+    }
+
+    setUploadError(null);
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('exerciseId', exercise.id);
+
+      const response = await fetch('/api/upload-exercise-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? 'Upload failed');
+      }
+
+      const data = (await response.json()) as {
+        imageUrl: string;
+        imagePath: string;
+        imageThumbUrl: string;
+        imageThumbPath: string;
+        imageUpdatedAt: string;
+      };
+
+      const image: ExerciseImage = {
+        imageUrl: data.imageUrl,
+        imagePath: data.imagePath,
+        imageThumbUrl: data.imageThumbUrl,
+        imageThumbPath: data.imageThumbPath,
+        imageUpdatedAt: data.imageUpdatedAt,
+      };
+
+      // Persist to Firestore.
+      await updateExerciseImage(exercise.id, image);
+
+      // Refresh local UI immediately.
+      onUploaded(image);
+    } catch (err: unknown) {
+      console.error('Image upload error:', err);
+      setUploadError(
+        err instanceof Error ? err.message : 'Upload failed. Please try again.'
+      );
+    } finally {
+      setUploading(false);
+      // Reset so the same file can be re-selected if needed.
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  return (
+    <div className="exercise-card__image-upload">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="exercise-card__image-upload-input"
+        aria-label={hasImage ? 'Change exercise image' : 'Upload exercise image'}
+        disabled={uploading}
+        onChange={handleFileChange}
+      />
+      <button
+        className="exercise-card__image-upload-btn"
+        disabled={uploading}
+        onClick={() => fileInputRef.current?.click()}
+        type="button"
+      >
+        {uploading ? (
+          <span className="exercise-card__image-upload-spinner" aria-hidden="true" />
+        ) : (
+          <UploadIcon />
+        )}
+        <span>
+          {uploading
+            ? 'Uploading…'
+            : hasImage
+            ? 'Change Image'
+            : 'Upload Image'}
+        </span>
+      </button>
+      {uploadError && (
+        <span className="exercise-card__image-upload-error" role="alert">
+          {uploadError}
+        </span>
       )}
     </div>
   );
@@ -275,6 +436,26 @@ function ImagePlaceholderIcon() {
       <rect x="3" y="3" width="18" height="18" rx="3" />
       <circle cx="8.5" cy="8.5" r="1.5" />
       <polyline points="21 15 16 10 5 21" />
+    </svg>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="8 2 8 10" />
+      <polyline points="4 6 8 2 12 6" />
+      <path d="M2 13h12" />
     </svg>
   );
 }
