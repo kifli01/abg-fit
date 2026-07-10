@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getExercises, searchExercises } from '../data/exercises';
+import { getExercises } from '../data/exercises';
 import type { Exercise } from '../data/exercises';
 
 interface UseExercisesResult {
