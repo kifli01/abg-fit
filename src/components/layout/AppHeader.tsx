@@ -8,7 +8,7 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 function resolveTitle(pathname: string): string {
-  return PAGE_TITLES[pathname] ?? 'abgFit';
+  return PAGE_TITLES[pathname] ?? '';
 }
 
 interface AppHeaderProps {
@@ -40,7 +40,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
             alt="abgFit"
             className="app-header__logo"
           />
-          <span className="app-header__brand-name">abgFit</span>
         </div>
 
         {/* Current page title */}
