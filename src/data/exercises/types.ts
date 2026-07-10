@@ -37,12 +37,23 @@ export interface CanonicalExercise {
 
 /**
  * Image metadata stored on a Firestore exercise document.
- * Initially null; populated after iteration 7 (exercise image upload).
+ * Populated after iteration 7 (exercise image upload).
+ *
+ * Required fields:
+ *   imageUrl        — original uploaded image URL
+ *   imagePath       — original Vercel Blob path
+ *   imageUpdatedAt  — ISO timestamp of last upload
+ *
+ * Optional thumbnail fields (128×128 center-cropped):
+ *   imageThumbUrl   — thumbnail URL
+ *   imageThumbPath  — thumbnail Blob path
  */
 export interface ExerciseImage {
-  url: string;
-  path: string;
-  updatedAt: string;
+  imageUrl: string;
+  imagePath: string;
+  imageUpdatedAt: string;
+  imageThumbUrl?: string;
+  imageThumbPath?: string;
 }
 
 /**
