@@ -80,7 +80,7 @@ Move `abgfit-exercises.canonical.json` from static runtime usage into Firebase F
 
 The JSON file should become a seed/import source only. The application should load exercises from Firestore so exercise fields can be updated later without changing the codebase.
 
-### 6. Image prompt action
+### 6. ✅ Image prompt action
 
 Add an admin-only `Img Prompt` button to the expanded exercise card.
 
