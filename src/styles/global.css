@@ -652,6 +652,74 @@ ul.app-drawer__nav {
 }
 
 /* ----------------------------------------
+   Exercise card — admin actions area
+   Sits at the bottom of the expanded card body.
+   Designed to accommodate future Upload Image / Change Image slot
+   alongside the Img Prompt button.
+   ---------------------------------------- */
+.exercise-card__admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.exercise-card__admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  -webkit-user-select: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.exercise-card__admin-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.exercise-card__admin-btn:active {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+/* Success state */
+.exercise-card__admin-btn--success {
+  background: rgba(80, 227, 164, 0.1);
+  border-color: rgba(80, 227, 164, 0.3);
+  color: #50e3a4;
+}
+
+.exercise-card__admin-btn--success:hover {
+  background: rgba(80, 227, 164, 0.15);
+  border-color: rgba(80, 227, 164, 0.4);
+  color: #50e3a4;
+}
+
+/* Error state */
+.exercise-card__admin-btn--error {
+  background: rgba(249, 112, 102, 0.1);
+  border-color: rgba(249, 112, 102, 0.3);
+  color: #f97066;
+}
+
+.exercise-card__admin-btn--error:hover {
+  background: rgba(249, 112, 102, 0.15);
+  border-color: rgba(249, 112, 102, 0.4);
+  color: #f97066;
+}
+
+/* ----------------------------------------
    Empty state and footer notes
    ---------------------------------------- */
 .exercise-library__empty {
