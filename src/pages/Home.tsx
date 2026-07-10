@@ -32,9 +32,6 @@ const Home: React.FC = () => {
             className="home-logo"
           />
           <Spacer h={1} />
-          <Text h1 className="home-title">
-            abgFit
-          </Text>
           <Text p className="home-subtitle">
             Your AI-powered fitness companion
           </Text>

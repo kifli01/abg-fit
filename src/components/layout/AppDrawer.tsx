@@ -83,7 +83,6 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ open, onClose }) => {
                 alt="abgFit"
                 className="app-drawer__logo"
               />
-              <span className="app-drawer__brand-name">abgFit</span>
             </div>
             <button
               className="app-drawer__close-btn"
