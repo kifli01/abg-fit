@@ -7,6 +7,7 @@ interface NavItem {
   path: string;
   icon: React.ReactNode;
   upcoming?: boolean;
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -26,6 +27,15 @@ const NAV_ITEMS: NavItem[] = [
     path: '/coach',
     icon: <CoachIcon />,
     upcoming: true,
+  },
+];
+
+const ADMIN_NAV_ITEMS: NavItem[] = [
+  {
+    label: 'Exercise Import',
+    path: '/admin/exercise-import',
+    icon: <ImportIcon />,
+    adminOnly: true,
   },
 ];
 
@@ -115,7 +125,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ open, onClose }) => {
           </div>
         )}
 
-        {/* Nav links */}
+        {/* Main nav links */}
         <ul className="app-drawer__nav" role="list">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.path;
@@ -135,6 +145,30 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ open, onClose }) => {
                   {item.upcoming && (
                     <span className="app-drawer__nav-badge">Soon</span>
                   )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Admin section */}
+        <div className="app-drawer__section-divider" aria-hidden="true" />
+        <p className="app-drawer__section-label">Admin</p>
+        <ul className="app-drawer__nav" role="list">
+          {ADMIN_NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.path;
+            return (
+              <li key={item.path}>
+                <button
+                  className={`app-drawer__nav-item${
+                    isActive ? ' app-drawer__nav-item--active' : ''
+                  } app-drawer__nav-item--admin`}
+                  onClick={() => handleNav(item.path)}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <span className="app-drawer__nav-icon">{item.icon}</span>
+                  <span className="app-drawer__nav-label">{item.label}</span>
                 </button>
               </li>
             );
@@ -186,6 +220,16 @@ function CoachIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.527 3.655 1.44 5.16L2 22l4.84-1.44A9.96 9.96 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
       <path d="M8 12h.01M12 12h.01M16 12h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ImportIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="7 10 12 15 17 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
