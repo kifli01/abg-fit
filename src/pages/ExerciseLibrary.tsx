@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Text, Input, Spacer, Loading } from '@geist-ui/core';
 import { useExercises } from '../hooks/useExercises';
+import { useAuth } from '../features/auth/useAuth';
 import type { Exercise } from '../data/exercises';
 
 /**
@@ -120,6 +121,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   isExpanded,
   onToggle,
 }) => {
+  const { isAuthorized } = useAuth();
   const instructionPreview = exercise.instructions.slice(0, 3);
 
   return (
@@ -218,9 +220,149 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
               )}
             </div>
           )}
+
+          {/* Admin-only actions */}
+          {isAuthorized && (
+            <div className="exercise-card__admin-actions">
+              <ImgPromptButton exercise={exercise} />
+            </div>
+          )}
         </div>
       )}
     </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// ImgPromptButton
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a structured image-generation prompt from the exercise data,
+ * copies it to the clipboard, and shows success/failure feedback.
+ */
+function buildImgPrompt(exercise: Exercise): string {
+  const equipment = exercise.equipment
+    ? normalizeEquipment(exercise.equipment)
+    : 'no equipment';
+
+  const primaryMuscles =
+    exercise.primaryMuscles.length > 0
+      ? exercise.primaryMuscles.join(', ')
+      : 'not specified';
+
+  const secondaryMuscles =
+    exercise.secondaryMuscles.length > 0
+      ? exercise.secondaryMuscles.join(', ')
+      : 'none';
+
+  const movementSummary = buildMovementSummary(exercise.instructions);
+
+  return `Based on the attached reference images, generate a square 1:1 exercise image for a modern workout app.
+
+Important:
+- The attached character reference images must be treated as the primary source for the athlete's face, body type, hairstyle, clothing, and overall identity.
+- The attached background and visual reference images must be treated as the primary source for composition, lighting, camera angle, color mood, and environment styling.
+- Follow the attached references closely and keep the result consistent with them.
+- Do not redesign the character or invent a different visual style.
+
+Exercise: ${exercise.name}
+Category: ${exercise.category}
+Difficulty: ${exercise.level}
+Equipment: ${equipment}
+Primary muscles: ${primaryMuscles}
+Secondary muscles: ${secondaryMuscles}
+
+Exercise description:
+${movementSummary}
+
+Image requirements:
+- One single athlete only
+- Correct exercise form must be clearly visible
+- Square 1:1 composition
+- Clean, high-quality fitness app visual
+- Minimal background clutter
+- No text, no labels, no watermark, no UI
+- Keep the character identity and visual style aligned with the attached references`;
+}
+
+/**
+ * Converts an instructions array into a short, readable movement summary.
+ * Uses the first 2–3 steps and synthesizes them into flowing prose.
+ */
+function buildMovementSummary(instructions: string[]): string {
+  if (instructions.length === 0) return 'Perform the exercise with proper form.';
+  // Take up to 3 steps, strip trailing periods for joining, then reassemble.
+  const steps = instructions
+    .slice(0, 3)
+    .map((s) => s.trim().replace(/\.+$/, ''));
+  if (steps.length === 1) return steps[0] + '.';
+  if (steps.length === 2) return `${steps[0]}. ${steps[1]}.`;
+  return `${steps[0]}. ${steps[1]}. ${steps[2]}.`;
+}
+
+/**
+ * Normalizes common equipment values so they read naturally in a prompt.
+ */
+function normalizeEquipment(equipment: string): string {
+  const map: Record<string, string> = {
+    'body only': 'bodyweight only',
+    'other': 'standard gym equipment',
+    'machine': 'cable/machine',
+    'e-z curl bar': 'EZ curl bar',
+    'foam roll': 'foam roller',
+  };
+  const key = equipment.toLowerCase();
+  return map[key] ?? equipment;
+}
+
+type CopyState = 'idle' | 'copied' | 'error';
+
+const ImgPromptButton: React.FC<{ exercise: Exercise }> = ({ exercise }) => {
+  const [copyState, setCopyState] = useState<CopyState>('idle');
+
+  const handleClick = async () => {
+    const prompt = buildImgPrompt(exercise);
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopyState('copied');
+      setTimeout(() => setCopyState('idle'), 2500);
+    } catch {
+      setCopyState('error');
+      setTimeout(() => setCopyState('idle'), 3000);
+    }
+  };
+
+  return (
+    <button
+      className={`exercise-card__admin-btn exercise-card__admin-btn--img-prompt${
+        copyState === 'copied' ? ' exercise-card__admin-btn--success' : ''
+      }${
+        copyState === 'error' ? ' exercise-card__admin-btn--error' : ''
+      }`}
+      onClick={handleClick}
+      type="button"
+      aria-label={`Copy image prompt for ${exercise.name}`}
+    >
+      {copyState === 'idle' && (
+        <>
+          <ImgPromptIcon />
+          <span>Img Prompt</span>
+        </>
+      )}
+      {copyState === 'copied' && (
+        <>
+          <CheckIcon />
+          <span>Prompt copied</span>
+        </>
+      )}
+      {copyState === 'error' && (
+        <>
+          <ErrorSmallIcon />
+          <span>Copy failed</span>
+        </>
+      )}
+    </button>
   );
 };
 
@@ -325,6 +467,39 @@ function ErrorIcon() {
       <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" />
       <line x1="24" y1="14" x2="24" y2="26" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
       <circle cx="24" cy="33" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ImgPromptIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+      <line x1="16" y1="3" x2="16" y2="7" />
+      <line x1="14" y1="5" x2="18" y2="5" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function ErrorSmallIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
     </svg>
   );
 }
