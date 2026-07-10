@@ -204,13 +204,23 @@ const ExerciseImport: React.FC = () => {
             type="default"
             onClick={handleCheck}
             loading={false}
+            placeholder={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
           >
             Check existing data
           </Button>
         )}
 
         {state.status === 'checking' && (
-          <Button type="default" loading disabled>
+          <Button
+            type="default"
+            loading
+            disabled
+            placeholder={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+          >
             Checking Firestore…
           </Button>
         )}
@@ -219,6 +229,9 @@ const ExerciseImport: React.FC = () => {
           <Button
             type="success"
             onClick={handleImport}
+            placeholder={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
           >
             {state.existingCount > 0
               ? `Overwrite and import ${total} exercises`
@@ -227,7 +240,14 @@ const ExerciseImport: React.FC = () => {
         )}
 
         {state.status === 'running' && (
-          <Button type="success" loading disabled>
+          <Button
+            type="success"
+            loading
+            disabled
+            placeholder={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+          >
             Importing…
           </Button>
         )}
@@ -244,6 +264,9 @@ const ExerciseImport: React.FC = () => {
                 errorMessage: null,
               })
             }
+            placeholder={undefined}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
           >
             Reset
           </Button>
