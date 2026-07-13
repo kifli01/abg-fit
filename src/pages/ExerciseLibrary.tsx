@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Text, Input, Spacer, Loading } from '@geist-ui/core';
 import { useExercises } from '../hooks/useExercises';
 import { useAuth } from '../features/auth/useAuth';
@@ -128,7 +128,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   isExpanded,
   onToggle,
 }) => {
-  const { isAuthorized } = useAuth();
+  const { isAuthorized, isAdmin } = useAuth();
   const instructionPreview = exercise.instructions.slice(0, 3);
 
   return (
@@ -233,11 +233,67 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           {isAuthorized && (
             <div className="exercise-card__admin-actions">
               <ImgPromptButton exercise={exercise} />
+              {isAdmin && <UploadImageButton exercise={exercise} />}
             </div>
           )}
         </div>
       )}
     </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// UploadImageButton
+// ---------------------------------------------------------------------------
+
+/**
+ * Admin-only button that opens the native file picker for image selection.
+ * Renders as "Upload Image" (primary style) when exercise has no image,
+ * and "Change Image" (secondary style) when an image URL already exists.
+ *
+ * File reading, processing, and uploading are intentionally out of scope
+ * for this iteration (7.4). The button wires a hidden <input type="file">
+ * to trigger the picker only.
+ */
+const UploadImageButton: React.FC<{ exercise: Exercise }> = ({ exercise }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading] = useState<boolean>(false);
+
+  const hasImage = exercise.image != null && exercise.image.url != null;
+
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="exercise-card__upload-input"
+      />
+      <button
+        className={`exercise-card__admin-btn${
+          hasImage
+            ? ' exercise-card__admin-btn--secondary'
+            : ' exercise-card__admin-btn--primary'
+        }`}
+        onClick={handleClick}
+        type="button"
+        disabled={isUploading}
+        aria-label={
+          hasImage
+            ? `Change image for ${exercise.name}`
+            : `Upload image for ${exercise.name}`
+        }
+      >
+        <UploadIcon />
+        <span>{hasImage ? 'Change Image' : 'Upload Image'}</span>
+      </button>
+    </>
   );
 };
 
@@ -508,6 +564,17 @@ function ErrorSmallIcon() {
       <circle cx="12" cy="12" r="10" />
       <line x1="12" y1="8" x2="12" y2="12" />
       <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
     </svg>
   );
 }
