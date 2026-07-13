@@ -23,20 +23,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Check Firestore allowedAccounts and upsert user profile for authorized users.
-  const checkAllowlistAndUpsert = useCallback(async (firebaseUser: User): Promise<boolean> => {
+  const checkAllowlistAndUpsert = useCallback(async (
+    firebaseUser: User,
+  ): Promise<{ authorized: boolean; isAdmin: boolean }> => {
     const email = firebaseUser.email;
     if (!email) {
-      return false;
+      return { authorized: false, isAdmin: false };
     }
 
     const allowRef = doc(db, 'allowedAccounts', email);
     const allowSnap = await getDoc(allowRef);
 
-    if (!allowSnap.exists() || allowSnap.data()?.active !== true) {
-      return false;
+    const data = allowSnap.data();
+    const authorized = data?.active === true;
+    const role = data?.role;
+    const isAdmin = role === 'owner';
+
+    if (!authorized) {
+      return { authorized: false, isAdmin: false };
     }
 
     // Authorized — upsert users/{uid}.
@@ -61,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     }
 
-    return true;
+    return { authorized: true, isAdmin };
   }, []);
 
   useEffect(() => {
@@ -69,21 +77,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!firebaseUser) {
         setUser(null);
         setIsAuthorized(false);
+        setIsAdmin(false);
         setIsLoading(false);
         return;
       }
 
       try {
-        const authorized = await checkAllowlistAndUpsert(firebaseUser);
-        if (authorized) {
+        const result = await checkAllowlistAndUpsert(firebaseUser);
+        if (result.authorized) {
           setUser(firebaseUser);
           setIsAuthorized(true);
+          setIsAdmin(result.isAdmin);
           setAuthError(null);
         } else {
           // Sign out unauthorized users immediately.
           await firebaseSignOut(auth);
           setUser(null);
           setIsAuthorized(false);
+          setIsAdmin(false);
           setAuthError('This Google account is not authorized for abgFit.');
         }
       } catch (err) {
@@ -91,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await firebaseSignOut(auth).catch(() => undefined);
         setUser(null);
         setIsAuthorized(false);
+        setIsAdmin(false);
         setAuthError('Authentication error. Please try again.');
       } finally {
         setIsLoading(false);
@@ -126,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthorized, authError, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthorized, isAdmin, authError, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
