@@ -86,17 +86,181 @@ Add an admin-only `Img Prompt` button to the expanded exercise card.
 
 The button should generate and copy an English prompt based on the exercise name and description. The generated prompt should instruct an external image AI tool to create a square 1:1 exercise image suitable for a workout application.
 
-### 7. Exercise image upload
+## 7. Exercise image upload
 
-Add an admin-only `Upload Image` / `Change Image` action to the expanded exercise card.
+Break this task into small, independent implementation steps. Each sub-task must be delivered in its own branch and its own pull request.
 
-Uploaded exercise images should be stored in Vercel Blob public storage. Related metadata should be stored on the corresponding Firestore exercise document, including:
+### 7.1 Admin role exposure
 
-- `imageUrl`
-- `imagePath`
-- `imageUpdatedAt`
+**Goal**
+Expose a dedicated role-based `isAdmin` flag in the existing auth flow.
 
-The application should load and render the stored exercise image from this persisted data source.
+**Area**
+- `src/features/auth/AuthProvider.tsx`
+- `src/features/auth/types.ts`
+- Firestore allowlist access logic
+
+**Expected outcome**
+- The auth layer reads the existing allowlist role from `allowedAccounts/{email}.role`.
+- The app exposes a separate `isAdmin` flag instead of treating all allowed users as admins.
+- No image upload logic is introduced in this step.
+
+**PR scope**
+- This sub-task must be implemented and reviewed as a standalone PR.
+- Do not combine it with image model, UI, or upload pipeline work.
+
+### 7.2 Exercise image metadata model
+
+**Goal**
+Extend the exercise image model to support original and thumbnail metadata.
+
+**Area**
+- `src/data/exercises/`
+- `src/hooks/useExercises.ts`
+- current Firestore exercise parsing and mapping code
+
+**Expected outcome**
+- Extend the current `ExerciseImage` type to support:
+  - `imageUrl`
+  - `imagePath`
+  - `imageUpdatedAt`
+  - `imageThumbUrl`
+  - `imageThumbPath`
+- Ensure the `Exercise` type and Firestore read path correctly map these fields.
+- Keep the change backward-compatible for exercises without images.
+
+**PR scope**
+- This sub-task must be implemented and reviewed as a standalone PR.
+- Do not combine it with rendering or upload actions.
+
+### 7.3 Read-only image rendering
+
+**Goal**
+Render exercise images in the UI using persisted metadata.
+
+**Area**
+- `src/pages/ExerciseLibrary.tsx`
+- related shared styles, if needed
+- collapsed/list card and expanded card rendering
+
+**Expected outcome**
+- Show a 64x64 thumbnail in the list or collapsed card UI.
+- Show the original uploaded image at the top of the expanded section using the full available width.
+- Do not upscale images.
+- Use stable layout behavior and sensible `object-fit` rules.
+- Keep a reasonable placeholder or fallback state when no image exists.
+
+**PR scope**
+- This sub-task must be implemented and reviewed as a standalone PR.
+- Do not combine it with upload, Blob, or Firestore write logic.
+
+### 7.4 Admin-only upload action
+
+**Goal**
+Add the admin-only image upload entry point to the expanded exercise card.
+
+**Area**
+- `src/pages/ExerciseLibrary.tsx`
+- auth-based conditional UI around admin actions
+
+**Expected outcome**
+- Add an admin-only `Upload Image` / `Change Image` action to the expanded exercise card.
+- Hide this action for non-admin users.
+- Keep the implementation aligned with the current auth system and the exposed `isAdmin` state.
+
+**PR scope**
+- This sub-task must be implemented and reviewed as a standalone PR.
+- Do not combine it with client-side image processing or persistence.
+
+### 7.5 Client-side image validation and processing
+
+**Goal**
+Validate the selected image file and prepare the original plus thumbnail assets before upload.
+
+**Area**
+- upload-related client helper logic
+- expanded exercise card upload flow
+
+**Expected outcome**
+- Restrict selection to image files only.
+- Prefer jpeg, png, and webp.
+- Add basic loading and error states.
+- Generate exactly two assets during the client upload flow:
+  1. original image
+  2. 128x128 thumbnail
+- The thumbnail must be square and center-cropped.
+- The thumbnail is intended for 64x64 UI display.
+- Do not generate a separate preview variant.
+- Do not upscale the original image.
+
+**PR scope**
+- This sub-task must be implemented and reviewed as a standalone PR.
+- Do not combine it with Blob upload or Firestore document updates.
+
+### 7.6 Vercel Blob upload integration
+
+**Goal**
+Upload the processed exercise images to the connected Vercel Blob store.
+
+**Area**
+- Vercel Blob integration
+- upload pipeline
+- any required API or helper layer already present in the repository
+
+**Expected outcome**
+- Add the minimal required `@vercel/blob` integration.
+- Upload the original image to the connected Blob store `abg-fit-blob`.
+- Upload the generated thumbnail as a separate Blob object.
+- Store and return the uploaded Blob URLs and paths needed by the app.
+
+**PR scope**
+- This sub-task must be implemented and reviewed as a standalone PR.
+- Do not combine it with Firestore metadata persistence.
+
+**Notes**
+- Do not assume extra manual Blob token setup is needed unless the actual repository/runtime proves otherwise.
+
+### 7.7 Firestore image metadata persistence
+
+**Goal**
+Persist uploaded image metadata on the related Firestore exercise document.
+
+**Area**
+- Firestore exercise write path
+- exercise document update logic
+
+**Expected outcome**
+- Save the upload metadata on the related Firestore exercise document using:
+  - required fields:
+    - `imageUrl`
+    - `imagePath`
+    - `imageUpdatedAt`
+  - additional fields:
+    - `imageThumbUrl`
+    - `imageThumbPath`
+- Keep the write path minimal and aligned with the current exercise data model.
+
+**PR scope**
+- This sub-task must be implemented and reviewed as a standalone PR.
+- Do not combine it with rendering refinements or broader refactors.
+
+### 7.8 Immediate UI refresh after upload
+
+**Goal**
+Refresh local UI state so the uploaded image appears immediately after a successful update.
+
+**Area**
+- local exercise state management
+- exercise upload success flow
+
+**Expected outcome**
+- After a successful upload and Firestore update, the new thumbnail and original image appear immediately in the UI.
+- Avoid requiring a full manual page refresh.
+- Keep the state update minimal and consistent with the existing hook and page structure.
+
+**PR scope**
+- This sub-task must be implemented and reviewed as a standalone PR.
+- Do not combine it with unrelated state management refactors.
 
 ### 8. Manual Workout Builder
 
