@@ -13,21 +13,63 @@ import type { Exercise, ExerciseImage } from './types';
 const EXERCISES_COLLECTION = 'exercises';
 
 /**
+ * Maps a raw Firestore document's image data to the nested ExerciseImage shape.
+ *
+ * Supports two source formats for backward compatibility:
+ *
+ *   (a) New nested format — the document has an `image` field that is an object:
+ *         { url, path, updatedAt, thumbUrl, thumbPath }
+ *
+ *   (b) Legacy flat format — the document has top-level flat fields:
+ *         imageUrl, imagePath, imageUpdatedAt, imageThumbUrl, imageThumbPath
+ *
+ *   (c) No image — neither format is present; returns null.
+ *
+ * New writes should always use the nested object format (a).
+ *
+ * This function is exported so it can be unit-tested independently.
+ */
+export function parseExerciseImage(data: DocumentData): ExerciseImage | null {
+  // (a) New nested format
+  if (data.image !== null && data.image !== undefined && typeof data.image === 'object') {
+    const img = data.image as Record<string, unknown>;
+    return {
+      url:       typeof img.url       === 'string' ? img.url       : null,
+      path:      typeof img.path      === 'string' ? img.path      : null,
+      updatedAt: typeof img.updatedAt === 'string' ? img.updatedAt : null,
+      thumbUrl:  typeof img.thumbUrl  === 'string' ? img.thumbUrl  : null,
+      thumbPath: typeof img.thumbPath === 'string' ? img.thumbPath : null,
+    };
+  }
+
+  // (b) Legacy flat format
+  const hasFlat =
+    data.imageUrl ||
+    data.imagePath ||
+    data.imageUpdatedAt ||
+    data.imageThumbUrl ||
+    data.imageThumbPath;
+
+  if (hasFlat) {
+    return {
+      url:       typeof data.imageUrl       === 'string' ? data.imageUrl       : null,
+      path:      typeof data.imagePath      === 'string' ? data.imagePath      : null,
+      updatedAt: typeof data.imageUpdatedAt === 'string' ? data.imageUpdatedAt : null,
+      thumbUrl:  typeof data.imageThumbUrl  === 'string' ? data.imageThumbUrl  : null,
+      thumbPath: typeof data.imageThumbPath === 'string' ? data.imageThumbPath : null,
+    };
+  }
+
+  // (c) No image
+  return null;
+}
+
+/**
  * Maps a raw Firestore document payload to the Exercise runtime type.
- * Safely handles missing or null image fields and optional thumbnail fields.
+ * Delegates image parsing to parseExerciseImage() for format-agnostic mapping.
  */
 function toExercise(data: DocumentData): Exercise {
-  const raw = data.image ?? null;
-  const image: ExerciseImage | null = raw
-    ? {
-        imageUrl: raw.imageUrl ?? '',
-        imagePath: raw.imagePath ?? '',
-        imageUpdatedAt: raw.imageUpdatedAt ?? '',
-        ...(raw.imageThumbUrl ? { imageThumbUrl: raw.imageThumbUrl } : {}),
-        ...(raw.imageThumbPath ? { imageThumbPath: raw.imageThumbPath } : {}),
-      }
-    : null;
-
+  const image: ExerciseImage | null = parseExerciseImage(data);
   return { ...(data as Omit<Exercise, 'image'>), image };
 }
 

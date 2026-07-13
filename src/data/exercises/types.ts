@@ -36,22 +36,35 @@ export interface CanonicalExercise {
 }
 
 /**
- * Image metadata stored on a Firestore exercise document.
- * Initially null; populated after iteration 7 (exercise image upload).
- * imageThumbUrl and imageThumbPath are optional for backward compatibility
- * with existing documents that have no thumbnail yet.
+ * Nested image metadata stored on a Firestore exercise document.
+ *
+ * Shape (new format):
+ *   image: null | {
+ *     url:       string | null,   // full-resolution CDN URL
+ *     path:      string | null,   // Blob storage path for the original
+ *     updatedAt: string | null,   // ISO-8601 timestamp of the last upload
+ *     thumbUrl:  string | null,   // 128x128 thumbnail CDN URL
+ *     thumbPath: string | null,   // Blob storage path for the thumbnail
+ *   }
+ *
+ * Backward compatibility:
+ *   Older Firestore documents store image data as flat top-level fields
+ *   (imageUrl, imagePath, imageUpdatedAt, imageThumbUrl, imageThumbPath).
+ *   The Firestore read layer maps both formats into this type so all
+ *   application code works with the nested shape only.
+ *   New writes must use the nested object format.
  */
 export interface ExerciseImage {
-  imageUrl: string;
-  imagePath: string;
-  imageUpdatedAt: string;
-  imageThumbUrl?: string;
-  imageThumbPath?: string;
+  url: string | null;
+  path: string | null;
+  updatedAt: string | null;
+  thumbUrl: string | null;
+  thumbPath: string | null;
 }
 
 /**
  * The runtime exercise shape — loaded from Firestore.
- * `hasMedia` is excluded; `image` replaces it.
+ * `hasMedia` is excluded; `image` is a nested optional object or null.
  */
 export interface Exercise {
   id: string;
@@ -68,5 +81,12 @@ export interface Exercise {
   category: string;
   searchTerms: string[];
   source: ExerciseSource;
+  /**
+   * Optional nested image object. null means the exercise has no image.
+   * Access patterns:
+   *   - collapsed/list view : exercise.image?.thumbUrl
+   *   - expanded view       : exercise.image?.url
+   *   - no-image guard      : exercise.image === null
+   */
   image: ExerciseImage | null;
 }
