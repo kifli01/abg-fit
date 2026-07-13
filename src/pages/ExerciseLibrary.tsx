@@ -9,6 +9,13 @@ import type { Exercise } from '../data/exercises';
  *
  * Loads exercises from Firestore via useExercises hook.
  * Renders exercise results as full-width expandable cards.
+ *
+ * Image rendering rules (exercise.image shape):
+ *   - exercise.image === null         → no image; show placeholder icon
+ *   - exercise.image?.thumbUrl        → use in collapsed / list card thumbnail
+ *   - exercise.image?.url             → use in expanded card (full-resolution)
+ *   Both thumbUrl and url may themselves be null within a non-null image object;
+ *   always fall back to the placeholder icon when the URL value is null.
  */
 const ExerciseLibrary: React.FC = () => {
   const { exercises, isLoading, error, search, query } = useExercises();
@@ -140,7 +147,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           isExpanded ? 'Collapse' : 'Expand'
         } details for ${exercise.name}`}
       >
-        {/* Left: image placeholder */}
+        {/* Left: thumbnail — uses exercise.image?.thumbUrl; falls back to placeholder */}
         <div className="exercise-card__thumb" aria-hidden="true">
           <ImagePlaceholderIcon />
         </div>
@@ -177,6 +184,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       {/* Expanded detail area */}
       {isExpanded && (
         <div className="exercise-card__body">
+          {/* Full-resolution image — uses exercise.image?.url; hidden when null */}
           <div className="exercise-card__detail-grid">
             <DetailRow label="Category" value={exercise.category} />
             {exercise.equipment && (

@@ -12,6 +12,16 @@ interface UseExercisesResult {
 
 /**
  * Loads exercises from Firestore and provides a client-side search interface.
+ *
+ * Each exercise in the returned array uses the nested image shape:
+ *   - exercise.image          — null if the exercise has no image
+ *   - exercise.image?.thumbUrl — use in collapsed / list card view (128x128 thumb)
+ *   - exercise.image?.url      — use in expanded card view (full resolution)
+ *
+ * The hook itself is image-format-agnostic; format mapping happens in the
+ * Firestore read layer (parseExerciseImage in src/data/exercises/firestore.ts),
+ * which transparently converts both legacy flat fields and the new nested object
+ * into the same ExerciseImage shape.
  */
 export function useExercises(): UseExercisesResult {
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);

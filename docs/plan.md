@@ -112,22 +112,43 @@ Expose a dedicated role-based `isAdmin` flag in the existing auth flow.
 ### 7.2 Exercise image metadata model
 
 **Goal**
-Extend the exercise image model to support original and thumbnail metadata.
+Define a nested, optional image object on exercises to avoid flat-field duplication and simplify null-handling.
 
 **Area**
-- `src/data/exercises/`
-- `src/hooks/useExercises.ts`
-- current Firestore exercise parsing and mapping code
+- `src/data/exercises/types.ts` — `ExerciseImage` interface and `Exercise` interface
+- `src/data/exercises/firestore.ts` — Firestore read/parse layer
+- `src/hooks/useExercises.ts` — JSDoc on the returned exercise shape
 
 **Expected outcome**
-- Extend the current `ExerciseImage` type to support:
-  - `imageUrl`
-  - `imagePath`
-  - `imageUpdatedAt`
-  - `imageThumbUrl`
-  - `imageThumbPath`
-- Ensure the `Exercise` type and Firestore read path correctly map these fields.
-- Keep the change backward-compatible for exercises without images.
+
+Each exercise optionally includes a single nested image object:
+
+```ts
+image: null | {
+  url:       string | null;   // full-resolution CDN URL
+  path:      string | null;   // Blob storage path for the original
+  updatedAt: string | null;   // ISO-8601 timestamp of the last upload
+  thumbUrl:  string | null;   // 128×128 thumbnail CDN URL
+  thumbPath: string | null;   // Blob storage path for the thumbnail
+}
+```
+
+`image === null` means the exercise has no image at all. The individual sub-fields (`url`, `thumbUrl`, etc.) may also be `null` within a non-null image object when a particular asset is not yet available.
+
+**Backward compatibility**
+
+Existing Firestore documents that still store image data as flat top-level fields (`imageUrl`, `imagePath`, `imageUpdatedAt`, `imageThumbUrl`, `imageThumbPath`) must continue to load correctly. The Firestore read layer implements a migration-mapping step (`parseExerciseImage`) that transparently converts both formats into the `ExerciseImage` shape:
+
+- If `doc.image` is an object → use the nested format directly.
+- Else if any of the flat fields (`imageUrl`, `imagePath`, etc.) are present → construct an `ExerciseImage` from them.
+- Otherwise → `image = null`.
+
+New writes must store the nested object format only. No client-side behavior changes if an exercise has no image; `image` may be `null` or missing.
+
+**Testing**
+
+- Add unit tests for `parseExerciseImage` covering: (1) nested → nested, (2) flat → nested, (3) missing → null.
+- Tests live in `src/data/exercises/__tests__/parseExerciseImage.test.ts`.
 
 **PR scope**
 - This sub-task must be implemented and reviewed as a standalone PR.
@@ -136,7 +157,7 @@ Extend the exercise image model to support original and thumbnail metadata.
 ### 7.3 Read-only image rendering
 
 **Goal**
-Render exercise images in the UI using persisted metadata.
+Render exercise images in the UI using the nested image object.
 
 **Area**
 - `src/pages/ExerciseLibrary.tsx`
@@ -144,11 +165,20 @@ Render exercise images in the UI using persisted metadata.
 - collapsed/list card and expanded card rendering
 
 **Expected outcome**
-- Show a 64x64 thumbnail in the list or collapsed card UI.
-- Show the original uploaded image at the top of the expanded section using the full available width.
+
+Image rendering rules based on the nested `image` shape:
+
+| Context | Source field | Fallback |
+|---|---|---|
+| Collapsed / list card thumbnail | `exercise.image?.thumbUrl` | placeholder icon |
+| Expanded card (full-width) | `exercise.image?.url` | placeholder icon |
+| No image at all | `exercise.image === null` | placeholder icon |
+
+- Show a 64×64 thumbnail in the list or collapsed card UI using `exercise.image?.thumbUrl`.
+- Show the full-resolution image at the top of the expanded section using `exercise.image?.url`.
 - Do not upscale images.
 - Use stable layout behavior and sensible `object-fit` rules.
-- Keep a reasonable placeholder or fallback state when no image exists.
+- Fall back to the placeholder icon whenever `image` is `null` or the specific URL field is `null`.
 
 **PR scope**
 - This sub-task must be implemented and reviewed as a standalone PR.
@@ -223,21 +253,24 @@ Upload the processed exercise images to the connected Vercel Blob store.
 ### 7.7 Firestore image metadata persistence
 
 **Goal**
-Persist uploaded image metadata on the related Firestore exercise document.
+Persist uploaded image metadata on the related Firestore exercise document using the nested image object format.
 
 **Area**
 - Firestore exercise write path
 - exercise document update logic
 
 **Expected outcome**
-- Save the upload metadata on the related Firestore exercise document using:
-  - required fields:
-    - `imageUrl`
-    - `imagePath`
-    - `imageUpdatedAt`
-  - additional fields:
-    - `imageThumbUrl`
-    - `imageThumbPath`
+- Save the upload metadata on the related Firestore exercise document as a single nested `image` object:
+  ```ts
+  image: {
+    url:       string;   // full-resolution CDN URL
+    path:      string;   // Blob storage path for the original
+    updatedAt: string;   // ISO-8601 timestamp
+    thumbUrl:  string;   // thumbnail CDN URL
+    thumbPath: string;   // Blob storage path for the thumbnail
+  }
+  ```
+- Do not write the old flat fields (`imageUrl`, `imagePath`, etc.).
 - Keep the write path minimal and aligned with the current exercise data model.
 
 **PR scope**
