@@ -48,6 +48,26 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'No file body provided' });
     }
 
+    // If this looks like a thumbnail, return an inline data URL so the
+    // frontend can immediately display the thumbnail without a persistent
+    // blob store. In production this should be replaced with a proper
+    // upload to a CDN or Vercel Blob and returning its public URL.
+    if (typeof fileName === 'string' && fileName.endsWith('-thumb.png') && contentType.startsWith('image/')) {
+      try {
+        const base64 = Buffer.from(payload).toString('base64');
+        const dataUrl = `data:${contentType};base64,${base64}`;
+        return res.status(200).json({
+          url: dataUrl,
+          pathname: `/uploads/${encodeURIComponent(fileName)}`,
+          contentType,
+          size: payload.byteLength,
+        });
+      } catch (e) {
+        console.error('Failed to build thumbnail data URL', e);
+        // fallthrough to default response
+      }
+    }
+
     return res.status(200).json({
       url: `/uploads/${encodeURIComponent(fileName)}`,
       pathname: `/uploads/${encodeURIComponent(fileName)}`,
