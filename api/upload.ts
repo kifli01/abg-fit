@@ -12,19 +12,42 @@ export default async function handler(req: any, res: any) {
     ? req.headers['content-type']
     : 'application/octet-stream';
 
-  const body = req.body;
+  async function readRequestBody(r: any): Promise<Uint8Array> {
+    if (r.body && (r.body instanceof Uint8Array || (typeof Buffer !== 'undefined' && Buffer.isBuffer(r.body)))) {
+      return r.body instanceof Uint8Array ? r.body : new Uint8Array(r.body);
+    }
 
-  if (!body) {
-    return res.status(400).json({ error: 'No file body provided' });
+    if (typeof r.arrayBuffer === 'function') {
+      try {
+        const ab = await r.arrayBuffer();
+        return new Uint8Array(ab);
+      } catch (e) {
+        // fallthrough to stream reader
+      }
+    }
+
+    const chunks: any[] = [];
+    try {
+      for await (const chunk of r) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+    } catch (e) {
+      // if streaming fails, we'll return empty
+    }
+
+    if (chunks.length === 0) return new Uint8Array();
+    const buffer = Buffer.concat(chunks);
+    return new Uint8Array(buffer);
   }
 
-  const payload = body instanceof Uint8Array
-    ? body
-    : typeof body === 'string'
-      ? new TextEncoder().encode(body)
-      : new TextEncoder().encode(JSON.stringify(body));
-
   try {
+    const payload = await readRequestBody(req);
+
+    if (!payload || payload.byteLength === 0) {
+      console.error('No file body provided - payload empty');
+      return res.status(400).json({ error: 'No file body provided' });
+    }
+
     return res.status(200).json({
       url: `/uploads/${encodeURIComponent(fileName)}`,
       pathname: `/uploads/${encodeURIComponent(fileName)}`,
@@ -32,7 +55,7 @@ export default async function handler(req: any, res: any) {
       size: payload.byteLength,
     });
   } catch (error) {
-    console.error('Upload failed', error);
+    console.error('Upload failed', error instanceof Error ? error.stack || error.message : error);
     return res.status(500).json({
       error: 'Upload failed',
       message: error instanceof Error ? error.message : 'Unknown error',
