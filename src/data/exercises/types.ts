@@ -43,7 +43,7 @@ export interface CanonicalExercise {
  *     url:       string | null,   // full-resolution CDN URL
  *     path:      string | null,   // Blob storage path for the original
  *     updatedAt: string | null,   // ISO-8601 timestamp of the last upload
- *     thumbUrl:  string | null,   // 64x64 thumbnail CDN URL
+ *     thumbUrl:  string | null,   // thumbnail CDN URL (uploaded 128x128; displayed 64x64 in UI)
  *     thumbPath: string | null,   // Blob storage path for the thumbnail
  *   }
  *
