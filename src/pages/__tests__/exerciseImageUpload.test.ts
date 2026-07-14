@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildUploadRequestHeaders, isSupportedImageFile } from '../exerciseImageUpload.ts';
+import { buildThumbnailFileName, buildUploadRequestHeaders, isSupportedImageFile } from '../exerciseImageUpload.ts';
 
 describe('exerciseImageUpload helpers', () => {
   it('accepts common supported image file types', () => {
@@ -18,5 +18,9 @@ describe('exerciseImageUpload helpers', () => {
       'Content-Type': 'image/jpeg',
       'x-file-name': 'my-photo.jpg',
     });
+  });
+
+  it('builds a PNG thumbnail filename from the original image name', () => {
+    expect(buildThumbnailFileName('my-photo.png')).toBe('my-photo-thumb.png');
   });
 });

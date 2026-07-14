@@ -14,6 +14,11 @@ export function buildUploadRequestHeaders(fileName: string, contentType: string)
   };
 }
 
+export function buildThumbnailFileName(originalName: string): string {
+  const baseName = originalName.replace(/\.[^.]+$/, '');
+  return `${baseName}-thumb.png`;
+}
+
 export interface PersistedExerciseImageData {
   url: string | null;
   path: string | null;
@@ -95,7 +100,7 @@ export async function processExerciseImage(file: File): Promise<{
       } else {
         reject(new Error('Failed to create thumbnail.'));
       }
-    }, 'image/webp');
+    }, 'image/png');
   });
 
   return {
@@ -109,7 +114,7 @@ export async function uploadExerciseImageAssets(
   thumbnail: Blob
 ): Promise<UploadedExerciseImageAssets> {
   const originalName = original.name || 'exercise-original';
-  const thumbnailName = `${originalName.replace(/\.[^.]+$/, '')}-thumb.webp`;
+  const thumbnailName = buildThumbnailFileName(originalName);
 
   const uploadOriginal = fetch('/api/upload', {
     method: 'POST',
