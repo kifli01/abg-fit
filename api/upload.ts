@@ -48,73 +48,76 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'No file body provided' });
     }
 
-    // Try Vercel Blob upload if configured. Support multiple env names for
-    // token/store to match different dashboard setups.
+    // Try Vercel Blob upload if configured. Support rotating/secondary tokens.
     const triedTokenEnv = ['VERCEL_BLOB_TOKEN', 'BLOB_TOKEN', 'BLOB_API_TOKEN', 'BLOB_WRITE_KEY'];
     const triedStoreEnv = ['BLOB_STORE_ID', 'VERCEL_BLOB_STORE_ID', 'BLOB_STORE'];
-    const blobToken = process.env.VERCEL_BLOB_TOKEN || process.env.BLOB_TOKEN || process.env.BLOB_API_TOKEN || process.env.BLOB_WRITE_KEY;
     const blobStoreId = process.env.BLOB_STORE_ID || process.env.VERCEL_BLOB_STORE_ID || process.env.BLOB_STORE;
 
-    // If a store is configured but no token is present, return a helpful error
-    if (blobStoreId && !blobToken) {
-      console.error('Blob store configured but no write token found');
+    // tokens may be provided as comma-separated list or individual envs
+    const tokensFromList = typeof process.env.VERCEL_BLOB_TOKENS === 'string' && process.env.VERCEL_BLOB_TOKENS.trim()
+      ? process.env.VERCEL_BLOB_TOKENS.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+    const individualTokens = triedTokenEnv.map(n => process.env[n]).filter(Boolean) as string[];
+    const tokenCandidates = [...tokensFromList, ...individualTokens];
+
+    if (blobStoreId && tokenCandidates.length === 0) {
+      console.error('Blob store configured but no write token candidates found');
       return res.status(500).json({
         error: 'Blob store configured but no write token found',
-        guidance: `Set one of these env vars with the blob write token: ${triedTokenEnv.join(', ')}`,
+        guidance: `Set a write token in Vercel and add it to env (VERCEL_BLOB_TOKENS or one of ${triedTokenEnv.join(', ')})`,
         triedStoreEnv,
         blobStoreId,
       });
     }
 
-    if (blobToken && blobStoreId) {
-      try {
-        const createResp = await fetch(`https://api.vercel.com/v1/blob/stores/${encodeURIComponent(blobStoreId)}/objects`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${blobToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name: fileName, size: payload.byteLength, contentType, visibility: 'public' }),
-        });
+    if (blobStoreId && tokenCandidates.length > 0) {
+      const errors: Array<{ tokenIndex: number; status?: number; message?: string }> = [];
+      for (let i = 0; i < tokenCandidates.length; i++) {
+        const blobToken = tokenCandidates[i];
+        try {
+          const createResp = await fetch(`https://api.vercel.com/v1/blob/stores/${encodeURIComponent(blobStoreId)}/objects`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${blobToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: fileName, size: payload.byteLength, contentType, visibility: 'public' }),
+          });
 
-        if (!createResp.ok) {
-          const txt = await createResp.text().catch(() => '');
-          console.error('Vercel Blob create object failed', createResp.status, txt);
-          throw new Error('Blob create failed');
+          if (!createResp.ok) {
+            const txt = await createResp.text().catch(() => '');
+            console.warn(`Blob create failed for token[${i}]`, createResp.status, txt.slice(0, 200));
+            errors.push({ tokenIndex: i, status: createResp.status, message: txt.slice(0, 200) });
+            continue; // try next token
+          }
+
+          const createJson = await createResp.json().catch(() => ({}));
+          const uploadUrl = createJson.uploadURL || createJson.uploadUrl || createJson.upload_url;
+          const publicUrl = createJson.url || createJson.publicUrl || createJson.cdnUrl || null;
+
+          if (!uploadUrl) {
+            console.warn(`Vercel Blob create response missing uploadURL for token[${i}]`, createJson);
+            errors.push({ tokenIndex: i, message: 'missing uploadURL' });
+            continue;
+          }
+
+          const putResp = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: Buffer.from(payload) });
+
+          if (!putResp.ok) {
+            const txt = await putResp.text().catch(() => '');
+            console.warn(`Blob PUT failed for token[${i}]`, putResp.status, txt.slice(0, 200));
+            errors.push({ tokenIndex: i, status: putResp.status, message: txt.slice(0, 200) });
+            continue; // try next token
+          }
+
+          const finalUrl = publicUrl || `/uploads/${encodeURIComponent(fileName)}`;
+          return res.status(200).json({ url: finalUrl, pathname: `/uploads/${encodeURIComponent(fileName)}`, contentType, size: payload.byteLength });
+        } catch (e) {
+          console.error(`Vercel Blob attempt ${i} threw`, e instanceof Error ? e.message : String(e));
+          errors.push({ tokenIndex: i, message: e instanceof Error ? e.message : String(e) });
+          continue; // try next token
         }
-
-        const createJson = await createResp.json().catch(() => ({}));
-        const uploadUrl = createJson.uploadURL || createJson.uploadUrl || createJson.upload_url;
-        const publicUrl = createJson.url || createJson.publicUrl || createJson.cdnUrl || null;
-
-        if (!uploadUrl) {
-          console.error('Vercel Blob create response missing uploadURL', createJson);
-          throw new Error('Blob create response invalid');
-        }
-
-        const putResp = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': contentType },
-          body: Buffer.from(payload),
-        });
-
-        if (!putResp.ok) {
-          const txt = await putResp.text().catch(() => '');
-          console.error('Vercel Blob upload PUT failed', putResp.status, txt);
-          throw new Error('Blob upload failed');
-        }
-
-        const finalUrl = publicUrl || `/uploads/${encodeURIComponent(fileName)}`;
-        return res.status(200).json({ url: finalUrl, pathname: `/uploads/${encodeURIComponent(fileName)}`, contentType, size: payload.byteLength });
-      } catch (e) {
-        console.error('Vercel Blob flow failed', e instanceof Error ? e.stack || e.message : e);
-        // Return non-sensitive debug to the client to aid troubleshooting.
-        return res.status(500).json({
-          error: 'Vercel Blob upload failed',
-          message: e instanceof Error ? e.message : String(e),
-          guidance: `Ensure your blob write token is valid and the store (${blobStoreId}) exists and is accessible. Tried token envs: ${triedTokenEnv.join(', ')}`,
-        });
       }
+
+      console.error('All blob token candidates failed', errors);
+      return res.status(500).json({ error: 'All blob token candidates failed', attempts: errors.length, details: errors.map(e => ({ tokenIndex: e.tokenIndex, status: e.status || null, message: e.message || null })) });
     }
 
     // Fallback: return a relative uploads path (client/dev will handle)
