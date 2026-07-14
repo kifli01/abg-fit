@@ -1,8 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Text, Input, Spacer, Loading } from '@geist-ui/core';
 import { useExercises } from '../hooks/useExercises';
 import { useAuth } from '../features/auth/useAuth';
 import type { Exercise } from '../data/exercises';
+import { buildExerciseImageMetadata, isSupportedImageFile, processExerciseImage, uploadExerciseImageAssets } from './exerciseImageUpload';
+import { saveExerciseImageMetadata } from '../data/exercises/firestore';
 
 /**
  * Exercise Library page.
@@ -20,9 +22,22 @@ import type { Exercise } from '../data/exercises';
 const ExerciseLibrary: React.FC = () => {
   const { exercises, isLoading, error, search, query } = useExercises();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [localExercises, setLocalExercises] = useState<Exercise[]>(exercises);
+
+  useEffect(() => {
+    setLocalExercises(exercises);
+  }, [exercises]);
 
   function toggleCard(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
+  }
+
+  function handleImageUploaded(exerciseId: string, nextImage: Exercise['image']) {
+    setLocalExercises((prev) =>
+      prev.map((exercise) =>
+        exercise.id === exerciseId ? { ...exercise, image: nextImage } : exercise
+      )
+    );
   }
 
   if (isLoading) {
@@ -44,7 +59,7 @@ const ExerciseLibrary: React.FC = () => {
     );
   }
 
-  const results = exercises;
+  const results = localExercises;
 
   return (
     <div className="exercise-library">
@@ -98,6 +113,7 @@ const ExerciseLibrary: React.FC = () => {
                 exercise={exercise}
                 isExpanded={expandedId === exercise.id}
                 onToggle={() => toggleCard(exercise.id)}
+                onImageUploaded={handleImageUploaded}
               />
             ))}
           </div>
@@ -121,12 +137,14 @@ interface ExerciseCardProps {
   exercise: Exercise;
   isExpanded: boolean;
   onToggle: () => void;
+  onImageUploaded?: (exerciseId: string, nextImage: Exercise['image']) => void;
 }
 
 const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exercise,
   isExpanded,
   onToggle,
+  onImageUploaded,
 }) => {
   const { isAuthorized, isAdmin } = useAuth();
   const instructionPreview = exercise.instructions.slice(0, 3);
@@ -149,7 +167,16 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       >
         {/* Left: thumbnail — uses exercise.image?.thumbUrl; falls back to placeholder */}
         <div className="exercise-card__thumb" aria-hidden="true">
-          <ImagePlaceholderIcon />
+          {exercise.image?.thumbUrl ? (
+            <img
+              src={exercise.image.thumbUrl}
+              alt={`${exercise.name} thumbnail`}
+              className="exercise-card__thumb-image"
+              loading="lazy"
+            />
+          ) : (
+            <ImagePlaceholderIcon />
+          )}
         </div>
 
         {/* Middle: name + meta */}
@@ -184,7 +211,16 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       {/* Expanded detail area */}
       {isExpanded && (
         <div className="exercise-card__body">
-          {/* Full-resolution image — uses exercise.image?.url; hidden when null */}
+          {exercise.image?.url ? (
+            <div className="exercise-card__hero-image">
+              <img
+                src={exercise.image.url}
+                alt={`${exercise.name} exercise`}
+                className="exercise-card__hero-image-element"
+              />
+            </div>
+          ) : null}
+
           <div className="exercise-card__detail-grid">
             <DetailRow label="Category" value={exercise.category} />
             {exercise.equipment && (
@@ -233,7 +269,12 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           {isAuthorized && (
             <div className="exercise-card__admin-actions">
               <ImgPromptButton exercise={exercise} />
-              {isAdmin && <UploadImageButton exercise={exercise} />}
+              {isAdmin && (
+                <UploadImageButton
+                  exercise={exercise}
+                  onImageUploaded={onImageUploaded}
+                />
+              )}
             </div>
           )}
         </div>
@@ -255,9 +296,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
  * for this iteration (7.4). The button wires a hidden <input type="file">
  * to trigger the picker only.
  */
-const UploadImageButton: React.FC<{ exercise: Exercise }> = ({ exercise }) => {
+const UploadImageButton: React.FC<{
+  exercise: Exercise;
+  onImageUploaded?: (exerciseId: string, nextImage: Exercise['image']) => void;
+}> = ({ exercise, onImageUploaded }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading] = useState<boolean>(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const hasImage = exercise.image != null && exercise.image.url != null;
 
@@ -265,15 +310,55 @@ const UploadImageButton: React.FC<{ exercise: Exercise }> = ({ exercise }) => {
     fileInputRef.current?.click();
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) {
+      return;
+    }
+
+    if (!isSupportedImageFile(selectedFile)) {
+      setStatusMessage('Please choose a JPG, PNG, or WebP image.');
+      event.target.value = '';
+      return;
+    }
+
+    setIsUploading(true);
+    setStatusMessage('Processing image…');
+
+    try {
+      const { original, thumbnail } = await processExerciseImage(selectedFile);
+      const uploaded = await uploadExerciseImageAssets(original, thumbnail);
+      const imagePayload = buildExerciseImageMetadata(uploaded);
+      const nextImage = {
+        url: imagePayload.url,
+        path: imagePayload.path,
+        updatedAt: imagePayload.updatedAt,
+        thumbUrl: imagePayload.thumbUrl,
+        thumbPath: imagePayload.thumbPath,
+      } satisfies Exercise['image'];
+      await saveExerciseImageMetadata(exercise.id, imagePayload);
+      onImageUploaded?.(exercise.id, nextImage);
+      console.info('Uploaded image assets', uploaded);
+      setStatusMessage('Image uploaded.');
+    } catch (error) {
+      console.error('Failed to process image', error);
+      setStatusMessage(error instanceof Error ? error.message : 'Unable to process image.');
+    } finally {
+      setIsUploading(false);
+      event.target.value = '';
+    }
+  };
+
   return (
     <>
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         aria-hidden="true"
         tabIndex={-1}
         className="exercise-card__upload-input"
+        onChange={handleFileChange}
       />
       <button
         className={`exercise-card__admin-btn${
@@ -291,8 +376,11 @@ const UploadImageButton: React.FC<{ exercise: Exercise }> = ({ exercise }) => {
         }
       >
         <UploadIcon />
-        <span>{hasImage ? 'Change Image' : 'Upload Image'}</span>
+        <span>{isUploading ? 'Processing…' : hasImage ? 'Change Image' : 'Upload Image'}</span>
       </button>
+      {statusMessage && (
+        <span className="exercise-card__upload-status">{statusMessage}</span>
+      )}
     </>
   );
 };
