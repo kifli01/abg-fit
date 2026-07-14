@@ -7,6 +7,13 @@ export interface UploadedExerciseImageAssets {
   thumbnailPath: string;
 }
 
+export function buildUploadRequestHeaders(fileName: string, contentType: string): Record<string, string> {
+  return {
+    'Content-Type': contentType || 'application/octet-stream',
+    'x-file-name': fileName,
+  };
+}
+
 export interface PersistedExerciseImageData {
   url: string | null;
   path: string | null;
@@ -106,13 +113,13 @@ export async function uploadExerciseImageAssets(
 
   const uploadOriginal = fetch('/api/upload', {
     method: 'POST',
-    headers: { 'Content-Type': original.type || 'application/octet-stream' },
+    headers: buildUploadRequestHeaders(originalName, original.type || 'application/octet-stream'),
     body: original,
   });
 
   const uploadThumbnail = fetch('/api/upload', {
     method: 'POST',
-    headers: { 'Content-Type': 'image/webp' },
+    headers: buildUploadRequestHeaders(thumbnailName, 'image/webp'),
     body: thumbnail,
   });
 
@@ -122,8 +129,8 @@ export async function uploadExerciseImageAssets(
     throw new Error('Failed to upload image assets.');
   }
 
-  const originalResult = await originalResponse.json();
-  const thumbnailResult = await thumbnailResponse.json();
+  const originalResult = await originalResponse.json().catch(() => ({}));
+  const thumbnailResult = await thumbnailResponse.json().catch(() => ({}));
 
   return {
     originalUrl: originalResult.url ?? originalResult.href ?? '',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isSupportedImageFile } from '../exerciseImageUpload.ts';
+import { buildUploadRequestHeaders, isSupportedImageFile } from '../exerciseImageUpload.ts';
 
 describe('exerciseImageUpload helpers', () => {
   it('accepts common supported image file types', () => {
@@ -11,5 +11,12 @@ describe('exerciseImageUpload helpers', () => {
   it('rejects unsupported file types', () => {
     expect(isSupportedImageFile({ name: 'photo.gif', type: 'image/gif' })).toBe(false);
     expect(isSupportedImageFile({ name: 'notes.txt', type: 'text/plain' })).toBe(false);
+  });
+
+  it('builds upload headers with the original filename', () => {
+    expect(buildUploadRequestHeaders('my-photo.jpg', 'image/jpeg')).toEqual({
+      'Content-Type': 'image/jpeg',
+      'x-file-name': 'my-photo.jpg',
+    });
   });
 });
