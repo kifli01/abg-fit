@@ -5,6 +5,7 @@ import {
   getDocs,
   query,
   orderBy,
+  updateDoc,
 } from 'firebase/firestore';
 import type { DocumentData } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -110,4 +111,20 @@ export async function searchExercisesFromFirestore(
   return all.filter((e) =>
     e.searchTerms.some((term) => term.toLowerCase().includes(q))
   );
+}
+
+export async function saveExerciseImageMetadata(
+  exerciseId: string,
+  image: ExerciseImage
+): Promise<void> {
+  const ref = doc(db, EXERCISES_COLLECTION, exerciseId);
+  await updateDoc(ref, {
+    image: {
+      url: image.url,
+      path: image.path,
+      updatedAt: image.updatedAt,
+      thumbUrl: image.thumbUrl,
+      thumbPath: image.thumbPath,
+    },
+  });
 }

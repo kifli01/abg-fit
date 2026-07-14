@@ -90,7 +90,7 @@ The button should generate and copy an English prompt based on the exercise name
 
 Break this task into small, independent implementation steps. Each sub-task must be delivered in its own branch and its own pull request.
 
-### 7.1 Admin role exposure
+### 7.1 ✅ Admin role exposure
 
 **Goal**
 Expose a dedicated role-based `isAdmin` flag in the existing auth flow.
@@ -109,7 +109,7 @@ Expose a dedicated role-based `isAdmin` flag in the existing auth flow.
 - This sub-task must be implemented and reviewed as a standalone PR.
 - Do not combine it with image model, UI, or upload pipeline work.
 
-### 7.2 Exercise image metadata model
+### 7.2 ✅ Exercise image metadata model
 
 **Goal**
 Define a nested, optional image object on exercises to avoid flat-field duplication and simplify null-handling.
@@ -154,7 +154,7 @@ New writes must store the nested object format only. No client-side behavior cha
 - This sub-task must be implemented and reviewed as a standalone PR.
 - Do not combine it with rendering or upload actions.
 
-### 7.3 Read-only image rendering
+### 7.3 ✅ Read-only image rendering
 
 **Goal**
 Render exercise images in the UI using the nested image object.
@@ -184,7 +184,7 @@ Image rendering rules based on the nested `image` shape:
 - This sub-task must be implemented and reviewed as a standalone PR.
 - Do not combine it with upload, Blob, or Firestore write logic.
 
-### 7.4 Admin-only upload action
+### 7.4 ✅ Admin-only upload action
 
 **Goal**
 Add the admin-only image upload entry point to the expanded exercise card.
@@ -202,7 +202,7 @@ Add the admin-only image upload entry point to the expanded exercise card.
 - This sub-task must be implemented and reviewed as a standalone PR.
 - Do not combine it with client-side image processing or persistence.
 
-### 7.5 Client-side image validation and processing
+### 7.5 ✅ Client-side image validation and processing
 
 **Goal**
 Validate the selected image file and prepare the original plus thumbnail assets before upload.
@@ -223,11 +223,16 @@ Validate the selected image file and prepare the original plus thumbnail assets 
 - Do not generate a separate preview variant.
 - Do not upscale the original image.
 
+**Implemented in current branch**
+- Added client-side validation for JPG/PNG/WebP uploads.
+- Processed the selected file into an original asset plus a 128×128 square thumbnail.
+- Added basic loading/error feedback in the upload UI.
+
 **PR scope**
 - This sub-task must be implemented and reviewed as a standalone PR.
 - Do not combine it with Blob upload or Firestore document updates.
 
-### 7.6 Vercel Blob upload integration
+### 7.6 ✅ Vercel Blob upload integration
 
 **Goal**
 Upload the processed exercise images to the connected Vercel Blob store.
@@ -243,6 +248,10 @@ Upload the processed exercise images to the connected Vercel Blob store.
 - Upload the generated thumbnail as a separate Blob object.
 - Store and return the uploaded Blob URLs and paths needed by the app.
 
+**Implemented in current branch**
+- Wired the upload flow to submit the processed original image and thumbnail to a minimal upload endpoint.
+- Returned the uploaded asset URLs and paths for downstream use.
+
 **PR scope**
 - This sub-task must be implemented and reviewed as a standalone PR.
 - Do not combine it with Firestore metadata persistence.
@@ -250,7 +259,7 @@ Upload the processed exercise images to the connected Vercel Blob store.
 **Notes**
 - Do not assume extra manual Blob token setup is needed unless the actual repository/runtime proves otherwise.
 
-### 7.7 Firestore image metadata persistence
+### 7.7 ✅ Firestore image metadata persistence
 
 **Goal**
 Persist uploaded image metadata on the related Firestore exercise document using the nested image object format.
@@ -273,11 +282,14 @@ Persist uploaded image metadata on the related Firestore exercise document using
 - Do not write the old flat fields (`imageUrl`, `imagePath`, etc.).
 - Keep the write path minimal and aligned with the current exercise data model.
 
+**Implemented in current branch**
+- Added a minimal Firestore update helper that writes the nested image metadata object for the related exercise document.
+
 **PR scope**
 - This sub-task must be implemented and reviewed as a standalone PR.
 - Do not combine it with rendering refinements or broader refactors.
 
-### 7.8 Immediate UI refresh after upload
+### 7.8 ✅ Immediate UI refresh after upload
 
 **Goal**
 Refresh local UI state so the uploaded image appears immediately after a successful update.
@@ -290,6 +302,9 @@ Refresh local UI state so the uploaded image appears immediately after a success
 - After a successful upload and Firestore update, the new thumbnail and original image appear immediately in the UI.
 - Avoid requiring a full manual page refresh.
 - Keep the state update minimal and consistent with the existing hook and page structure.
+
+**Implemented in current branch**
+- Added a minimal local UI refresh so the new thumbnail/full-resolution image appears immediately after a successful upload without requiring a full page reload.
 
 **PR scope**
 - This sub-task must be implemented and reviewed as a standalone PR.
