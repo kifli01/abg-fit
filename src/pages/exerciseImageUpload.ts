@@ -124,7 +124,7 @@ export async function uploadExerciseImageAssets(
 
   const uploadThumbnail = fetch('/api/upload', {
     method: 'POST',
-    headers: buildUploadRequestHeaders(thumbnailName, 'image/webp'),
+    headers: buildUploadRequestHeaders(thumbnailName, 'image/png'),
     body: thumbnail,
   });
 
