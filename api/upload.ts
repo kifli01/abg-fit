@@ -48,32 +48,59 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'No file body provided' });
     }
 
-    // If this looks like a thumbnail, return an inline data URL so the
-    // frontend can immediately display the thumbnail without a persistent
-    // blob store. In production this should be replaced with a proper
-    // upload to a CDN or Vercel Blob and returning its public URL.
-    if (typeof fileName === 'string' && fileName.endsWith('-thumb.png') && contentType.startsWith('image/')) {
+    // Try Vercel Blob upload if configured. Support multiple env names for
+    // token/store to match different dashboard setups.
+    const blobToken = process.env.VERCEL_BLOB_TOKEN || process.env.BLOB_TOKEN || process.env.BLOB_API_TOKEN || process.env.BLOB_WRITE_KEY;
+    const blobStoreId = process.env.BLOB_STORE_ID || process.env.VERCEL_BLOB_STORE_ID || process.env.BLOB_STORE;
+
+    if (blobToken && blobStoreId) {
       try {
-        const base64 = Buffer.from(payload).toString('base64');
-        const dataUrl = `data:${contentType};base64,${base64}`;
-        return res.status(200).json({
-          url: dataUrl,
-          pathname: `/uploads/${encodeURIComponent(fileName)}`,
-          contentType,
-          size: payload.byteLength,
+        const createResp = await fetch(`https://api.vercel.com/v1/blob/stores/${encodeURIComponent(blobStoreId)}/objects`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${blobToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: fileName, size: payload.byteLength, contentType, visibility: 'public' }),
         });
+
+        if (!createResp.ok) {
+          const txt = await createResp.text().catch(() => '');
+          console.error('Vercel Blob create object failed', createResp.status, txt);
+          throw new Error('Blob create failed');
+        }
+
+        const createJson = await createResp.json().catch(() => ({}));
+        const uploadUrl = createJson.uploadURL || createJson.uploadUrl || createJson.upload_url;
+        const publicUrl = createJson.url || createJson.publicUrl || createJson.cdnUrl || null;
+
+        if (!uploadUrl) {
+          console.error('Vercel Blob create response missing uploadURL', createJson);
+          throw new Error('Blob create response invalid');
+        }
+
+        const putResp = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': contentType },
+          body: Buffer.from(payload),
+        });
+
+        if (!putResp.ok) {
+          const txt = await putResp.text().catch(() => '');
+          console.error('Vercel Blob upload PUT failed', putResp.status, txt);
+          throw new Error('Blob upload failed');
+        }
+
+        const finalUrl = publicUrl || `/uploads/${encodeURIComponent(fileName)}`;
+        return res.status(200).json({ url: finalUrl, pathname: `/uploads/${encodeURIComponent(fileName)}`, contentType, size: payload.byteLength });
       } catch (e) {
-        console.error('Failed to build thumbnail data URL', e);
-        // fallthrough to default response
+        console.error('Vercel Blob flow failed', e instanceof Error ? e.stack || e.message : e);
+        // fallthrough to fallback behavior below
       }
     }
 
-    return res.status(200).json({
-      url: `/uploads/${encodeURIComponent(fileName)}`,
-      pathname: `/uploads/${encodeURIComponent(fileName)}`,
-      contentType,
-      size: payload.byteLength,
-    });
+    // Fallback: return a relative uploads path (client/dev will handle)
+    return res.status(200).json({ url: `/uploads/${encodeURIComponent(fileName)}`, pathname: `/uploads/${encodeURIComponent(fileName)}`, contentType, size: payload.byteLength });
   } catch (error) {
     console.error('Upload failed', error instanceof Error ? error.stack || error.message : error);
     return res.status(500).json({
