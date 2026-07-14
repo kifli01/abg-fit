@@ -70,7 +70,7 @@ export async function processExerciseImage(file: File): Promise<{
     throw new Error('Unable to process image in this browser.');
   }
 
-  const size = 128;
+  const size = 64;
   const sourceWidth = image.naturalWidth;
   const sourceHeight = image.naturalHeight;
   const sourceRatio = sourceWidth / sourceHeight;
@@ -91,7 +91,26 @@ export async function processExerciseImage(file: File): Promise<{
   canvas.width = size;
   canvas.height = size;
   context.clearRect(0, 0, size, size);
+
+  // Draw rounded rectangle clipping path so thumbnails are rounded
+  const radius = Math.round(size * 0.125); // ~8 for 64px
+  const x = 0;
+  const y = 0;
+  const w = size;
+  const h = size;
+
+  context.save();
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.arcTo(x + w, y, x + w, y + h, radius);
+  context.arcTo(x + w, y + h, x, y + h, radius);
+  context.arcTo(x, y + h, x, y, radius);
+  context.arcTo(x, y, x + w, y, radius);
+  context.closePath();
+  context.clip();
+
   context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+  context.restore();
 
   const thumbnailBlob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
