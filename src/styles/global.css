@@ -744,8 +744,7 @@ ul.app-drawer__nav {
 .exercise-card__hero-image-element {
   width: 100%;
   height: auto;
-  max-height: 360px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 12px;
   display: block;
 }
