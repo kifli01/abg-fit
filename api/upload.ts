@@ -50,8 +50,21 @@ export default async function handler(req: any, res: any) {
 
     // Try Vercel Blob upload if configured. Support multiple env names for
     // token/store to match different dashboard setups.
+    const triedTokenEnv = ['VERCEL_BLOB_TOKEN', 'BLOB_TOKEN', 'BLOB_API_TOKEN', 'BLOB_WRITE_KEY'];
+    const triedStoreEnv = ['BLOB_STORE_ID', 'VERCEL_BLOB_STORE_ID', 'BLOB_STORE'];
     const blobToken = process.env.VERCEL_BLOB_TOKEN || process.env.BLOB_TOKEN || process.env.BLOB_API_TOKEN || process.env.BLOB_WRITE_KEY;
     const blobStoreId = process.env.BLOB_STORE_ID || process.env.VERCEL_BLOB_STORE_ID || process.env.BLOB_STORE;
+
+    // If a store is configured but no token is present, return a helpful error
+    if (blobStoreId && !blobToken) {
+      console.error('Blob store configured but no write token found');
+      return res.status(500).json({
+        error: 'Blob store configured but no write token found',
+        guidance: `Set one of these env vars with the blob write token: ${triedTokenEnv.join(', ')}`,
+        triedStoreEnv,
+        blobStoreId,
+      });
+    }
 
     if (blobToken && blobStoreId) {
       try {
@@ -95,7 +108,12 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ url: finalUrl, pathname: `/uploads/${encodeURIComponent(fileName)}`, contentType, size: payload.byteLength });
       } catch (e) {
         console.error('Vercel Blob flow failed', e instanceof Error ? e.stack || e.message : e);
-        // fallthrough to fallback behavior below
+        // Return non-sensitive debug to the client to aid troubleshooting.
+        return res.status(500).json({
+          error: 'Vercel Blob upload failed',
+          message: e instanceof Error ? e.message : String(e),
+          guidance: `Ensure your blob write token is valid and the store (${blobStoreId}) exists and is accessible. Tried token envs: ${triedTokenEnv.join(', ')}`,
+        });
       }
     }
 
